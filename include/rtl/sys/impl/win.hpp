@@ -54,6 +54,7 @@
 
 #include <Windows.h>
 
+// TODO: "Retry, ignore, abort" loop
 #if RTL_ENABLE_WINAPI_DIAGNOSTICS
     #define RTL_WINAPI_CHECK( condition ) rtl::impl::win::check( condition, __FILE__, __LINE__ )
 #else

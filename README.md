@@ -15,3 +15,4 @@ RTL is useful for making Windows native applications with extremely small size (
 - [ ] Support for other C++ compilers (clang, gcc)
 - [ ] Support for x64 platform
 - [ ] Resolve TODOs from source files
+- [ ] Implement profiler
