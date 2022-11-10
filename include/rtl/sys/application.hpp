@@ -4,16 +4,16 @@
  *
  * This file is part of the RTL library. Redistribution and use in source and
  * binary forms, with or without modification, are permitted exclusively
- * under the terms of the MIT license. You should have received a copy of the 
+ * under the terms of the MIT license. You should have received a copy of the
  * license with this file. If not, please visit:
- * https://github.com/out61h/rtl/blob/main/LICENSE. 
+ * https://github.com/out61h/rtl/blob/main/LICENSE.
  */
 #pragma once
 
 #include <rtl/int.hpp>
 #include <rtl/sys/keyboard.hpp>
 
-#if RTL_ENABLE_APPLICATION
+#if RTL_ENABLE_APP
 
 namespace rtl
 {
@@ -22,25 +22,23 @@ namespace rtl
     public:
         struct input
         {
-            // cppcheck-suppress unusedStructMember
             void* void_source; // CAUTION: it is better to NOT touch it!!!
 
-    #if RTL_ENABLE_APPLICATION_KEYS
+    #if RTL_ENABLE_APP_KEYS
             struct keys
             {
-                // cppcheck-suppress unusedStructMember
                 bool state[(size_t)keyboard::keys::count];
-                // cppcheck-suppress unusedStructMember
                 bool pressed[(size_t)keyboard::keys::count];
             } keys;
     #endif
 
-    #if RTL_ENABLE_APPLICATION_CLOCK
+    #if RTL_ENABLE_APP_CLOCK
             struct clock
             {
-                // cppcheck-suppress unusedStructMember
+                // thirds per second or seconds per minute
                 static constexpr auto measure = 60;
-                // cppcheck-suppress unusedStructMember
+
+                // monotone counter of thirds (1/60 of second)
                 int32_t thirds;
             } clock;
     #endif
@@ -50,21 +48,18 @@ namespace rtl
         {
             struct screen
             {
-                // cppcheck-suppress unusedStructMember
                 uint8_t* pixels;
-                // cppcheck-suppress unusedStructMember
-                int width;
-                // cppcheck-suppress unusedStructMember
-                int height;
-                // cppcheck-suppress unusedStructMember
-                size_t pitch;
+                int      width;
+                int      height;
+                size_t   pitch;
             } screen;
 
-    #if RTL_ENABLE_APPLICATION_OSD
+    #if RTL_ENABLE_APP_OSD
             struct osd
             {
-                // cppcheck-suppress unusedStructMember
                 static constexpr auto text_length = 256;
+                static constexpr auto margin = 12;
+                static constexpr auto font_size = 24;
 
                 enum class location
                 {
@@ -75,7 +70,6 @@ namespace rtl
                     count
                 };
 
-                // cppcheck-suppress unusedStructMember
                 wchar_t text[(size_t)location::count][text_length];
             } osd;
     #endif

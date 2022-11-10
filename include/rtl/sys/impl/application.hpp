@@ -4,9 +4,9 @@
  *
  * This file is part of the RTL library. Redistribution and use in source and
  * binary forms, with or without modification, are permitted exclusively
- * under the terms of the MIT license. You should have received a copy of the 
+ * under the terms of the MIT license. You should have received a copy of the
  * license with this file. If not, please visit:
- * https://github.com/out61h/rtl/blob/main/LICENSE. 
+ * https://github.com/out61h/rtl/blob/main/LICENSE.
  */
 #pragma once
 
@@ -22,7 +22,7 @@
 #include "memory.hpp"
 #include "win.hpp"
 
-#if RTL_ENABLE_APPLICATION
+#if RTL_ENABLE_APP
 
 namespace rtl
 {
@@ -42,10 +42,15 @@ namespace rtl
                 int height() const;
 
             private:
-                // TODO: pass via create or config via defines?
-                static constexpr int osd_margin = 12;
-                // TODO: pass via create?
-                static constexpr int osd_font_size = 24;
+                static constexpr bool is_fullscreen = RTL_ENABLE_APP_FULLSCREEN;
+                static constexpr bool is_fixed_size = RTL_ENABLE_APP_FIXED_WINDOW_SIZE;
+                static constexpr bool has_cursor = RTL_ENABLE_APP_CURSOR;
+
+                static constexpr DWORD style
+                    = is_fullscreen
+                          ? WS_POPUP
+                          : ( is_fixed_size ? WS_OVERLAPPEDWINDOW & ~WS_MAXIMIZEBOX & ~WS_THICKFRAME
+                                            : WS_OVERLAPPEDWINDOW );
 
                 static LRESULT CALLBACK wnd_proc( HWND   hWnd,
                                                   UINT   uMsg,
@@ -66,7 +71,7 @@ namespace rtl
                 application::input  m_input{ 0 };
                 application::output m_output{ 0 };
 
-    #if RTL_ENABLE_APPLICATION_OSD
+    #if RTL_ENABLE_APP_OSD
                 static constexpr auto osd_locations_count
                     = (size_t)application::output::osd::location::count;
 
@@ -97,36 +102,44 @@ namespace rtl
                 m_window_class.hbrBackground = ( HBRUSH )::GetStockObject( BLACK_BRUSH );
                 RTL_WINAPI_CHECK( m_window_class.hbrBackground != nullptr );
 
-    #if RTL_ENABLE_APPLICATION_CURSOR
-                m_window_class.hCursor = ::LoadCursorW( nullptr, IDC_ARROW );
-                RTL_WINAPI_CHECK( m_window_class.hCursor != nullptr );
-    #endif
+                if ( has_cursor )
+                {
+                    m_window_class.hCursor = ::LoadCursorW( nullptr, IDC_ARROW );
+                    RTL_WINAPI_CHECK( m_window_class.hCursor != nullptr );
+                }
 
                 [[maybe_unused]] ATOM atom = ::RegisterClassW( &m_window_class );
                 RTL_WINAPI_CHECK( atom != 0 );
 
-                RECT desktop_rect;
-                BOOL result = ::GetWindowRect( ::GetDesktopWindow(), &desktop_rect );
-                RTL_WINAPI_CHECK( result );
+                BOOL result;
+                RECT window_rect;
 
-                m_window_handle = ::CreateWindowExW( WS_EX_APPWINDOW,
-                                                     m_window_class.lpszClassName,
-                                                     window_name,
-                                                     WS_POPUP,
-                                                     CW_USEDEFAULT,
-                                                     CW_USEDEFAULT,
-                                                     desktop_rect.right - desktop_rect.left,
-                                                     desktop_rect.bottom - desktop_rect.top,
-                                                     nullptr,
-                                                     nullptr,
-                                                     m_window_class.hInstance,
-                                                     nullptr ); // TODO: this?
+                if ( is_fullscreen )
+                {
+                    result = ::GetWindowRect( ::GetDesktopWindow(), &window_rect );
+                    RTL_WINAPI_CHECK( result );
+                }
+
+                m_window_handle = ::CreateWindowExW(
+                    WS_EX_APPWINDOW,
+                    m_window_class.lpszClassName,
+                    window_name,
+                    style,
+                    CW_USEDEFAULT,
+                    CW_USEDEFAULT,
+                    is_fullscreen ? window_rect.right - window_rect.left : CW_USEDEFAULT,
+                    is_fullscreen ? window_rect.bottom - window_rect.top : CW_USEDEFAULT,
+                    nullptr,
+                    nullptr,
+                    m_window_class.hInstance,
+                    nullptr ); // TODO: this?
                 RTL_WINAPI_CHECK( m_window_handle != nullptr );
 
                 static_assert( sizeof( this ) == sizeof( LONG_PTR ) );
                 ::SetWindowLongPtrW(
                     m_window_handle, GWL_USERDATA, reinterpret_cast<LONG_PTR>( this ) );
 
+                // TODO: Check order of subsequent calls
                 ::ShowWindow( m_window_handle, SW_SHOW );
 
                 result = ::UpdateWindow( m_window_handle );
@@ -177,9 +190,9 @@ namespace rtl
                 m_output.screen.width = width;
                 m_output.screen.height = height;
 
-    #if RTL_ENABLE_APPLICATION_OSD
+    #if RTL_ENABLE_APP_OSD
                 {
-                    m_font = ::CreateFontW( osd_font_size * width / 1280,
+                    m_font = ::CreateFontW( application::output::osd::font_size * width / 1280,
                                             0,
                                             0,
                                             0,
@@ -204,9 +217,9 @@ namespace rtl
                     result = ::GetTextMetricsW( m_device_context_handle, &tm );
                     RTL_WINAPI_CHECK( result );
 
-                    const int font_height = tm.tmHeight;
-
-                    const int osd_height = 2 * osd_margin + font_height;
+                    const int     font_height = tm.tmHeight;
+                    constexpr int osd_margin = application::output::osd::margin;
+                    const int     osd_height = 2 * osd_margin + font_height;
 
                     constexpr size_t i0 = (size_t)application::output::osd::location::top_left;
                     m_osd_rects[i0].left = osd_margin;
@@ -274,7 +287,7 @@ namespace rtl
 
                 switch ( uMsg )
                 {
-    #if RTL_ENABLE_APPLICATION_KEYS
+    #if RTL_ENABLE_APP_KEYS
                 case WM_KEYDOWN:
                 {
                     const int key = static_cast<int>( virtual_key_to_enum( wParam ) );
@@ -324,16 +337,17 @@ namespace rtl
                     RTL_WINAPI_CHECK( result );
                     return 0;
                 }
-    #if !RTL_ENABLE_APPLICATION_CURSOR
                 case WM_SETCURSOR:
-                    if ( LOWORD( lParam ) == HTCLIENT )
+                    if ( !has_cursor )
                     {
-                        SetCursor( nullptr );
-                        return TRUE;
+                        if ( LOWORD( lParam ) == HTCLIENT )
+                        {
+                            SetCursor( nullptr );
+                            return TRUE;
+                        }
                     }
 
                     break;
-    #endif
                 }
                 return ::DefWindowProcW( hWnd, uMsg, wParam, lParam );
             }
@@ -349,19 +363,19 @@ namespace rtl
                 [[maybe_unused]] BOOL result = ::GdiFlush();
                 RTL_WINAPI_CHECK( result );
 
-    #if RTL_ENABLE_APPLICATION_CLOCK
+    #if RTL_ENABLE_APP_CLOCK
                 m_input.clock.thirds = static_cast<int32_t>( ::GetTickCount() )
                                        * application::input::clock::measure / 1000;
     #endif
 
                 auto action = fn( m_input, m_output );
 
-    #if RTL_ENABLE_APPLICATION_KEYS
+    #if RTL_ENABLE_APP_KEYS
                 for ( size_t i = 0; i < static_cast<size_t>( keyboard::keys::count ); ++i )
                     m_input.keys.pressed[i] = false;
     #endif
 
-    #if RTL_ENABLE_APPLICATION_OSD
+    #if RTL_ENABLE_APP_OSD
                 for ( int i = 0; i < osd_locations_count; ++i )
                 {
                     [[maybe_unused]] const int res = ::FillRect(
