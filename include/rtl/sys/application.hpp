@@ -82,11 +82,12 @@ namespace rtl
         };
 
         using update_function = action( const input&, output& );
+        using reset_function = void();
 
     public:
         static application& instance();
 
-        void run( const wchar_t* app_name, update_function* update );
+        void run( const wchar_t* app_name, reset_function* on_reset, update_function* on_update );
 
     private:
         application() = default;

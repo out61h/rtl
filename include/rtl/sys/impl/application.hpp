@@ -34,7 +34,8 @@ namespace rtl
             {
             public:
                 void create( const wchar_t* window_name );
-                void update( application::update_function* update_fn );
+                void update( application::reset_function*  on_resize,
+                             application::update_function* on_update );
                 void invalidate();
                 void destroy();
 
@@ -42,14 +43,20 @@ namespace rtl
                 int height() const;
 
             private:
+                void destroy_resizable_components();
+                void resize();
+
+                void init_osd_text( int width, int height );
+                void draw_osd_text();
+
                 static constexpr bool is_fullscreen = RTL_ENABLE_APP_FULLSCREEN;
-                static constexpr bool is_fixed_size = RTL_ENABLE_APP_FIXED_WINDOW_SIZE;
+                static constexpr bool is_resizable = RTL_ENABLE_APP_RESIZE;
                 static constexpr bool has_cursor = RTL_ENABLE_APP_CURSOR;
 
                 static constexpr DWORD style
                     = is_fullscreen
                           ? WS_POPUP
-                          : ( is_fixed_size ? WS_OVERLAPPEDWINDOW & ~WS_MAXIMIZEBOX & ~WS_THICKFRAME
+                          : ( !is_resizable ? WS_OVERLAPPEDWINDOW & ~WS_MAXIMIZEBOX & ~WS_THICKFRAME
                                             : WS_OVERLAPPEDWINDOW );
 
                 static LRESULT CALLBACK wnd_proc( HWND   hWnd,
@@ -57,6 +64,7 @@ namespace rtl
                                                   WPARAM wParam,
                                                   LPARAM lParam );
 
+                // NOTE: all variables must be initialized to zero
                 WNDCLASSW m_window_class{ 0 };
 
                 BITMAPINFO m_bitmap_info{ 0 };
@@ -70,6 +78,12 @@ namespace rtl
 
                 application::input  m_input{ 0 };
                 application::output m_output{ 0 };
+
+    #if RTL_ENABLE_APP_RESIZE
+                bool m_sizing{ false };
+                bool m_sized{ false };
+                bool m_pad[2]{ false };
+    #endif
 
     #if RTL_ENABLE_APP_OSD
                 static constexpr auto osd_locations_count
@@ -153,7 +167,12 @@ namespace rtl
 
                 ::ReleaseDC( m_window_handle, hdc );
 
-                result = ::GetClientRect( m_window_handle, &m_client_rect );
+                resize();
+            }
+
+            void window::resize()
+            {
+                [[maybe_unused]] BOOL result = ::GetClientRect( m_window_handle, &m_client_rect );
                 RTL_WINAPI_CHECK( result );
 
                 const int width = this->width();
@@ -168,6 +187,8 @@ namespace rtl
                     m_bitmap_info.bmiHeader.biCompression = BI_RGB;
                     m_bitmap_info.bmiHeader.biXPelsPerMeter = 0x130B;
                     m_bitmap_info.bmiHeader.biYPelsPerMeter = 0x130B;
+
+                    RTL_ASSERT( m_bitmap_handle == nullptr );
 
                     m_bitmap_handle
                         = ::CreateDIBSection( m_device_context_handle,
@@ -185,13 +206,18 @@ namespace rtl
                         = ( ( ( sizeof_rgb * width ) + align - 1 ) / align ) * align;
                 }
 
-                ::SelectObject( m_device_context_handle, m_bitmap_handle );
-
                 m_output.screen.width = width;
                 m_output.screen.height = height;
 
+                init_osd_text( width, height );
+            }
+
+            void window::init_osd_text( int width, int height )
+            {
     #if RTL_ENABLE_APP_OSD
                 {
+                    RTL_ASSERT( m_font == nullptr );
+
                     m_font = ::CreateFontW( application::output::osd::font_size * width / 1280,
                                             0,
                                             0,
@@ -206,16 +232,18 @@ namespace rtl
                                             DEFAULT_QUALITY,
                                             DEFAULT_PITCH | FF_DONTCARE,
                                             NULL );
-                    ::SelectObject( m_device_context_handle, m_font );
-
-                    // NOTE: The same color as background one.
-                    ::SetBkColor( m_device_context_handle, RGB( 0, 0, 0 ) );
-                    // ::SetBkMode( m_device_context_handle, TRANSPARENT );
-                    ::SetTextColor( m_device_context_handle, RGB( 255, 255, 255 ) );
+                    HGDIOBJ object = ::SelectObject( m_device_context_handle, m_font );
+                    RTL_WINAPI_CHECK( object != nullptr );
+                    RTL_ASSERT( ::GetObjectType( object ) == OBJ_FONT );
 
                     TEXTMETRIC tm;
-                    result = ::GetTextMetricsW( m_device_context_handle, &tm );
+
+                    [[maybe_unused]] BOOL result
+                        = ::GetTextMetricsW( m_device_context_handle, &tm );
                     RTL_WINAPI_CHECK( result );
+
+                    object = ::SelectObject( m_device_context_handle, object );
+                    RTL_ASSERT( object == m_font );
 
                     const int     font_height = tm.tmHeight;
                     constexpr int osd_margin = application::output::osd::margin;
@@ -255,20 +283,66 @@ namespace rtl
     #endif
             }
 
-            void window::destroy()
+            void window::draw_osd_text()
+            {
+    #if RTL_ENABLE_APP_OSD
+                for ( int i = 0; i < osd_locations_count; ++i )
+                {
+                    [[maybe_unused]] const int res = ::FillRect(
+                        m_device_context_handle, &m_osd_rects[i], m_window_class.hbrBackground );
+                    RTL_WINAPI_CHECK( res != 0 );
+                }
+
+                HGDIOBJ object = ::SelectObject( m_device_context_handle, m_font );
+                RTL_WINAPI_CHECK( object != nullptr );
+                RTL_ASSERT( ::GetObjectType( object ) == OBJ_FONT );
+
+                // NOTE: The same color as background one.
+                ::SetBkColor( m_device_context_handle, RGB( 0, 0, 0 ) );
+                // ::SetBkMode( m_device_context_handle, TRANSPARENT );
+                ::SetTextColor( m_device_context_handle, RGB( 255, 255, 255 ) );
+
+                for ( int i = 0; i < osd_locations_count; ++i )
+                {
+                    [[maybe_unused]] const int res = ::DrawTextW( m_device_context_handle,
+                                                                  m_output.osd.text[i],
+                                                                  -1,
+                                                                  &m_osd_rects[i],
+                                                                  m_osd_params[i] | DT_SINGLELINE );
+                    RTL_WINAPI_CHECK( res != 0 );
+                }
+
+                object = ::SelectObject( m_device_context_handle, object );
+                RTL_ASSERT( object == m_font );
+    #endif
+            }
+
+            void window::destroy_resizable_components()
             {
                 BOOL result;
-                result = ::DeleteDC( m_device_context_handle );
-                RTL_WINAPI_CHECK( result );
 
-                result = ::DeleteObject( m_font );
-                RTL_WINAPI_CHECK( result );
+                if ( m_font )
+                {
+                    result = ::DeleteObject( m_font );
+                    RTL_WINAPI_CHECK( result );
+                    m_font = nullptr;
+                }
 
                 if ( m_bitmap_handle )
                 {
                     result = ::DeleteObject( m_bitmap_handle );
                     RTL_WINAPI_CHECK( result );
+                    m_bitmap_handle = nullptr;
                 }
+            }
+
+            void window::destroy()
+            {
+                destroy_resizable_components();
+
+                BOOL result;
+                result = ::DeleteDC( m_device_context_handle );
+                RTL_WINAPI_CHECK( result );
 
                 result = ::DestroyWindow( m_window_handle );
                 RTL_WINAPI_CHECK( result );
@@ -276,17 +350,15 @@ namespace rtl
 
             LRESULT window::wnd_proc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
             {
-                if ( uMsg == WM_CLOSE )
-                {
-                    ::PostQuitMessage( 0 );
-                    return 0;
-                }
-
                 window* that
                     = reinterpret_cast<window*>( ::GetWindowLongPtrW( hWnd, GWL_USERDATA ) );
 
                 switch ( uMsg )
                 {
+                case WM_CLOSE:
+                    ::PostQuitMessage( 0 );
+                    return 0;
+
     #if RTL_ENABLE_APP_KEYS
                 case WM_KEYDOWN:
                 {
@@ -296,18 +368,50 @@ namespace rtl
                         that->m_input.keys.pressed[key] = true;
 
                     that->m_input.keys.state[key] = true;
-                    break;
+                    return 0;
                 }
 
                 case WM_KEYUP:
                 {
                     const int key = static_cast<int>( virtual_key_to_enum( wParam ) );
                     that->m_input.keys.state[key] = false;
+                    return 0;
+                }
+    #endif
+
+    #if RTL_ENABLE_APP_RESIZE
+                case WM_SIZING:
+                {
+                    if ( that )
+                        that->m_sizing = true;
+
+                    return 0;
+                }
+
+                case WM_EXITSIZEMOVE:
+                {
+                    if ( that )
+                        that->m_sizing = false;
+
+                    break;
+                }
+
+                case WM_SIZE:
+                {
+                    if ( that )
+                        that->m_sized = true;
+
                     break;
                 }
     #endif
+
                 case WM_PAINT:
                 {
+    #if RTL_ENABLE_APP_RESIZE
+                    if ( that->m_sizing )
+                        break;
+    #endif
+
                     PAINTSTRUCT ps;
 
                     HDC hdc = ::BeginPaint( hWnd, &ps );
@@ -315,6 +419,13 @@ namespace rtl
 
                     if ( that->m_device_context_handle )
                     {
+                        that->draw_osd_text();
+
+                        HGDIOBJ object = ::SelectObject( that->m_device_context_handle,
+                                                         that->m_bitmap_handle );
+                        RTL_WINAPI_CHECK( object != nullptr );
+                        RTL_ASSERT( ::GetObjectType( object ) == OBJ_BITMAP );
+
                         const int width = that->m_bitmap_info.bmiHeader.biWidth;
                         const int height = -that->m_bitmap_info.bmiHeader.biHeight;
 
@@ -331,12 +442,17 @@ namespace rtl
                                                                  0,
                                                                  SRCCOPY );
                         RTL_WINAPI_CHECK( result );
+
+                        // TODO: This call brokes font rendering, deal with it later
+                        // object = ::SelectObject( that->m_device_context_handle, object );
+                        // RTL_ASSERT( object == that->m_bitmap_handle );
                     }
 
                     [[maybe_unused]] BOOL result = ::EndPaint( hWnd, &ps );
                     RTL_WINAPI_CHECK( result );
                     return 0;
                 }
+
                 case WM_SETCURSOR:
                     if ( !has_cursor )
                     {
@@ -349,6 +465,7 @@ namespace rtl
 
                     break;
                 }
+
                 return ::DefWindowProcW( hWnd, uMsg, wParam, lParam );
             }
 
@@ -358,7 +475,8 @@ namespace rtl
                 RTL_WINAPI_CHECK( result );
             }
 
-            void window::update( application::update_function* fn )
+            void window::update( [[maybe_unused]] application::reset_function* on_resize,
+                                 application::update_function*                 on_update )
             {
                 [[maybe_unused]] BOOL result = ::GdiFlush();
                 RTL_WINAPI_CHECK( result );
@@ -368,31 +486,23 @@ namespace rtl
                                        * application::input::clock::measure / 1000;
     #endif
 
-                auto action = fn( m_input, m_output );
+    #if RTL_ENABLE_APP_RESIZE
+                if ( m_sized )
+                {
+                    destroy_resizable_components();
+                    resize();
+                    on_resize();
+                    m_sized = false;
+                }
+    #endif
+
+                auto action = on_update( m_input, m_output );
 
     #if RTL_ENABLE_APP_KEYS
                 for ( size_t i = 0; i < static_cast<size_t>( keyboard::keys::count ); ++i )
                     m_input.keys.pressed[i] = false;
     #endif
 
-    #if RTL_ENABLE_APP_OSD
-                for ( int i = 0; i < osd_locations_count; ++i )
-                {
-                    [[maybe_unused]] const int res = ::FillRect(
-                        m_device_context_handle, &m_osd_rects[i], m_window_class.hbrBackground );
-                    RTL_WINAPI_CHECK( res != 0 );
-                }
-
-                for ( int i = 0; i < osd_locations_count; ++i )
-                {
-                    [[maybe_unused]] const int res = ::DrawTextW( m_device_context_handle,
-                                                                  m_output.osd.text[i],
-                                                                  -1,
-                                                                  &m_osd_rects[i],
-                                                                  m_osd_params[i] | DT_SINGLELINE );
-                    RTL_WINAPI_CHECK( res != 0 );
-                }
-    #endif
                 if ( action == application::action::close )
                 {
                     ::PostQuitMessage( 0 );
@@ -409,9 +519,13 @@ namespace rtl
 
     } // namespace impl
 
-    void application::run( const wchar_t* app_name, update_function* update_fn )
+    void application::run( const wchar_t*   app_name,
+                           reset_function*  on_reset,
+                           update_function* on_update )
     {
         impl::win::g_window.create( app_name );
+
+        on_reset();
 
         MSG msg{ 0 };
 
@@ -436,7 +550,7 @@ namespace rtl
             // TODO: wait for signal to update
             // TODO: run processing in separate thread
             // TODO: return time for next start or -1 for infinite wait
-            impl::win::g_window.update( update_fn );
+            impl::win::g_window.update( on_reset, on_update );
         }
     #endif
 

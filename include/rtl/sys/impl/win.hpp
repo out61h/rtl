@@ -46,7 +46,6 @@
 #define NOSCROLL
 #define NOSERVICE
 #define NOSOUND
-#define NOSYSCOMMANDS
 #define NOSYSMETRICS
 #define NOTAPE
 #define NOWH
