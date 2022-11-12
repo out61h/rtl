@@ -46,6 +46,9 @@ namespace rtl
 
         struct output
         {
+            void* void_sink; // CAUTION: it is better to NOT touch it!!!
+
+    #if RTL_ENABLE_APP_SCREEN
             struct screen
             {
                 uint8_t* pixels;
@@ -53,6 +56,7 @@ namespace rtl
                 int      height;
                 size_t   pitch;
             } screen;
+    #endif
 
     #if RTL_ENABLE_APP_OSD
             struct osd

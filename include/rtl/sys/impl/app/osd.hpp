@@ -27,71 +27,70 @@ namespace rtl
         {
             void window::init_osd_text( int width, int height )
             {
-                {
-                    RTL_ASSERT( m_font == nullptr );
+                RTL_ASSERT( m_osd_font == nullptr );
 
-                    m_font = ::CreateFontW( application::output::osd::font_size * width / 1280,
-                                            0,
-                                            0,
-                                            0,
-                                            FW_DONTCARE,
-                                            FALSE,
-                                            FALSE,
-                                            FALSE,
-                                            DEFAULT_CHARSET,
-                                            OUT_DEFAULT_PRECIS,
-                                            CLIP_DEFAULT_PRECIS,
-                                            DEFAULT_QUALITY,
-                                            DEFAULT_PITCH | FF_DONTCARE,
-                                            NULL );
-                    HGDIOBJ object = ::SelectObject( m_device_context_handle, m_font );
-                    RTL_WINAPI_CHECK( object != nullptr );
-                    RTL_ASSERT( ::GetObjectType( object ) == OBJ_FONT );
+                m_osd_font = ::CreateFontW( application::output::osd::font_size * width / 1280,
+                                        0,
+                                        0,
+                                        0,
+                                        FW_DONTCARE,
+                                        FALSE,
+                                        FALSE,
+                                        FALSE,
+                                        DEFAULT_CHARSET,
+                                        OUT_DEFAULT_PRECIS,
+                                        CLIP_DEFAULT_PRECIS,
+                                        DEFAULT_QUALITY,
+                                        DEFAULT_PITCH | FF_DONTCARE,
+                                        NULL );
+                HGDIOBJ object = ::SelectObject( m_device_context_handle, m_osd_font );
+                RTL_WINAPI_CHECK( object != nullptr );
+                RTL_ASSERT( ::GetObjectType( object ) == OBJ_FONT );
 
-                    TEXTMETRIC tm;
+                TEXTMETRIC tm;
 
-                    [[maybe_unused]] BOOL result
-                        = ::GetTextMetricsW( m_device_context_handle, &tm );
-                    RTL_WINAPI_CHECK( result );
+                [[maybe_unused]] BOOL result = ::GetTextMetricsW( m_device_context_handle, &tm );
+                RTL_WINAPI_CHECK( result );
 
-                    object = ::SelectObject( m_device_context_handle, object );
-                    RTL_ASSERT( object == m_font );
+                object = ::SelectObject( m_device_context_handle, object );
+                RTL_ASSERT( object == m_osd_font );
 
-                    const int     font_height = tm.tmHeight;
-                    constexpr int osd_margin = application::output::osd::margin;
-                    const int     osd_height = 2 * osd_margin + font_height;
+                const int     font_height = tm.tmHeight;
+                constexpr int osd_margin = application::output::osd::margin;
+                const int     osd_height = 2 * osd_margin + font_height;
 
-                    constexpr size_t i0 = (size_t)application::output::osd::location::top_left;
-                    m_osd_rects[i0].left = osd_margin;
-                    m_osd_rects[i0].right = width - osd_margin;
-                    m_osd_rects[i0].top = osd_margin;
-                    m_osd_rects[i0].bottom = osd_height;
-                    m_osd_params[i0] = DT_TOP | DT_LEFT | DT_NOCLIP;
+                constexpr size_t i0 = (size_t)application::output::osd::location::top_left;
+                m_osd_rects[i0].left = osd_margin;
+                m_osd_rects[i0].right = width - osd_margin;
+                m_osd_rects[i0].top = osd_margin;
+                m_osd_rects[i0].bottom = osd_height;
+                m_osd_params[i0] = DT_TOP | DT_LEFT | DT_NOCLIP;
 
-                    constexpr size_t i1 = (size_t)application::output::osd::location::top_right;
-                    m_osd_rects[i1].left = width / 2 + osd_margin;
-                    m_osd_rects[i1].right = width - osd_margin;
-                    m_osd_rects[i1].top = osd_margin;
-                    m_osd_rects[i1].bottom = osd_height;
-                    m_osd_params[i1] = DT_TOP | DT_RIGHT | DT_NOCLIP;
+                constexpr size_t i1 = (size_t)application::output::osd::location::top_right;
+                m_osd_rects[i1].left = width / 2 + osd_margin;
+                m_osd_rects[i1].right = width - osd_margin;
+                m_osd_rects[i1].top = osd_margin;
+                m_osd_rects[i1].bottom = osd_height;
+                m_osd_params[i1] = DT_TOP | DT_RIGHT | DT_NOCLIP;
 
-                    constexpr size_t i2 = (size_t)application::output::osd::location::bottom_left;
-                    m_osd_rects[i2].left = osd_margin;
-                    m_osd_rects[i2].right = width - osd_margin;
-                    m_osd_rects[i2].top = height - font_height - osd_margin;
-                    m_osd_rects[i2].bottom = height - osd_margin;
-                    m_osd_params[i2] = DT_TOP | DT_LEFT | DT_NOCLIP;
+                constexpr size_t i2 = (size_t)application::output::osd::location::bottom_left;
+                m_osd_rects[i2].left = osd_margin;
+                m_osd_rects[i2].right = width - osd_margin;
+                m_osd_rects[i2].top = height - font_height - osd_margin;
+                m_osd_rects[i2].bottom = height - osd_margin;
+                m_osd_params[i2] = DT_TOP | DT_LEFT | DT_NOCLIP;
 
-                    constexpr size_t i3 = (size_t)application::output::osd::location::bottom_right;
-                    m_osd_rects[i3].left = width / 2 + osd_margin;
-                    m_osd_rects[i3].right = width - osd_margin;
-                    m_osd_rects[i3].top = height - font_height - osd_margin;
-                    m_osd_rects[i3].bottom = height - osd_margin;
-                    m_osd_params[i3] = DT_TOP | DT_RIGHT | DT_NOCLIP;
+                constexpr size_t i3 = (size_t)application::output::osd::location::bottom_right;
+                m_osd_rects[i3].left = width / 2 + osd_margin;
+                m_osd_rects[i3].right = width - osd_margin;
+                m_osd_rects[i3].top = height - font_height - osd_margin;
+                m_osd_rects[i3].bottom = height - osd_margin;
+                m_osd_params[i3] = DT_TOP | DT_RIGHT | DT_NOCLIP;
 
-                    m_output.screen.pixels += m_output.screen.pitch * osd_height;
-                    m_output.screen.height -= osd_height * 2;
-                }
+        #if RTL_ENABLE_APP_SCREEN
+                m_output.screen.pixels += m_output.screen.pitch * osd_height;
+                m_output.screen.height -= osd_height * 2;
+        #endif
             }
 
             void window::draw_osd_text()
@@ -103,7 +102,7 @@ namespace rtl
                     RTL_WINAPI_CHECK( res != 0 );
                 }
 
-                HGDIOBJ object = ::SelectObject( m_device_context_handle, m_font );
+                HGDIOBJ object = ::SelectObject( m_device_context_handle, m_osd_font );
                 RTL_WINAPI_CHECK( object != nullptr );
                 RTL_ASSERT( ::GetObjectType( object ) == OBJ_FONT );
 
@@ -123,7 +122,7 @@ namespace rtl
                 }
 
                 object = ::SelectObject( m_device_context_handle, object );
-                RTL_ASSERT( object == m_font );
+                RTL_ASSERT( object == m_osd_font );
             }
         } // namespace win
     }     // namespace impl

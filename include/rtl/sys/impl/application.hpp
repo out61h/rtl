@@ -75,13 +75,8 @@ namespace rtl
                 // NOTE: all variables must be initialized to zero
                 WNDCLASSW m_window_class{ 0 };
 
-                BITMAPINFO m_bitmap_info{ 0 };
-
-                HDC     m_device_context_handle{ nullptr };
-                HWND    m_window_handle{ nullptr };
-                HBITMAP m_bitmap_handle{ nullptr };
-                HFONT   m_font{ nullptr };
-
+                HDC  m_device_context_handle{ nullptr };
+                HWND m_window_handle{ nullptr };
                 RECT m_client_rect{ 0 };
 
                 application::input  m_input{ 0 };
@@ -96,12 +91,18 @@ namespace rtl
                 WINDOWPLACEMENT m_placement;
     #endif
 
+    #if RTL_ENABLE_APP_SCREEN
+                BITMAPINFO m_bitmap_info{ 0 };
+                HBITMAP    m_bitmap_handle{ nullptr };
+    #endif
+
     #if RTL_ENABLE_APP_OSD
                 static constexpr auto osd_locations_count
                     = (size_t)application::output::osd::location::count;
 
-                RECT m_osd_rects[osd_locations_count]{ 0 };
-                UINT m_osd_params[osd_locations_count]{ 0 };
+                RECT  m_osd_rects[osd_locations_count]{ 0 };
+                UINT  m_osd_params[osd_locations_count]{ 0 };
+                HFONT m_osd_font{ nullptr };
     #endif
             };
 
@@ -148,7 +149,7 @@ namespace rtl
                 BOOL result;
                 RECT window_rect;
 
-                if ( is_fullscreen )
+                if constexpr ( is_fullscreen )
                 {
                     result = ::GetWindowRect( ::GetDesktopWindow(), &window_rect );
                     RTL_WINAPI_CHECK( result );
@@ -176,7 +177,7 @@ namespace rtl
     #if RTL_ENABLE_APP_RESIZE
                 m_placement.length = sizeof( m_placement );
 
-                if ( is_fullscreen )
+                if constexpr ( is_fullscreen )
                     set_fullscreen_mode( true );
     #endif
 
@@ -206,9 +207,10 @@ namespace rtl
                 [[maybe_unused]] BOOL result = ::GetClientRect( m_window_handle, &m_client_rect );
                 RTL_WINAPI_CHECK( result );
 
-                const int width = this->width();
-                const int height = this->height();
+                [[maybe_unused]] const int width = this->width();
+                [[maybe_unused]] const int height = this->height();
 
+    #if RTL_ENABLE_APP_SCREEN
                 {
                     m_bitmap_info.bmiHeader.biWidth = width;
                     m_bitmap_info.bmiHeader.biHeight = -height;
@@ -239,6 +241,7 @@ namespace rtl
 
                 m_output.screen.width = width;
                 m_output.screen.height = height;
+    #endif
 
     #if RTL_ENABLE_APP_OSD
                 init_osd_text( width, height );
@@ -247,21 +250,23 @@ namespace rtl
 
             void window::destroy_resizable_components()
             {
-                BOOL result;
-
-                if ( m_font )
+    #if RTL_ENABLE_APP_OSD
+                if ( m_osd_font )
                 {
-                    result = ::DeleteObject( m_font );
+                    [[maybe_unused]] BOOL result = ::DeleteObject( m_osd_font );
                     RTL_WINAPI_CHECK( result );
-                    m_font = nullptr;
+                    m_osd_font = nullptr;
                 }
+    #endif
 
+    #if RTL_ENABLE_APP_SCREEN
                 if ( m_bitmap_handle )
                 {
-                    result = ::DeleteObject( m_bitmap_handle );
+                    [[maybe_unused]] BOOL result = ::DeleteObject( m_bitmap_handle );
                     RTL_WINAPI_CHECK( result );
                     m_bitmap_handle = nullptr;
                 }
+    #endif
             }
 
             void window::destroy()
@@ -411,6 +416,7 @@ namespace rtl
                         that->draw_osd_text();
     #endif
 
+    #if RTL_ENABLE_APP_SCREEN
                         [[maybe_unused]] HGDIOBJ object = ::SelectObject(
                             that->m_device_context_handle, that->m_bitmap_handle );
                         RTL_WINAPI_CHECK( object != nullptr );
@@ -433,9 +439,10 @@ namespace rtl
                                                                  SRCCOPY );
                         RTL_WINAPI_CHECK( result );
 
-                        // TODO: This call brokes font rendering, deal with it later
-                        // object = ::SelectObject( that->m_device_context_handle, object );
-                        // RTL_ASSERT( object == that->m_bitmap_handle );
+                            // TODO: This call brokes font rendering, deal with it later
+                            // object = ::SelectObject( that->m_device_context_handle, object );
+                            // RTL_ASSERT( object == that->m_bitmap_handle );
+    #endif
                     }
 
                     [[maybe_unused]] BOOL result = ::EndPaint( hWnd, &ps );
