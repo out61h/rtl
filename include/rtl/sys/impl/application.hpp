@@ -54,6 +54,9 @@ namespace rtl
                 void init_osd_text( int width, int height );
                 void draw_osd_text();
     #endif
+
+                static constexpr int  minimal_width = 600;
+                static constexpr int  minimal_height = 400;
                 static constexpr bool is_fullscreen = RTL_ENABLE_APP_FULLSCREEN;
                 static constexpr bool is_resizable = RTL_ENABLE_APP_RESIZE;
                 static constexpr bool has_cursor = RTL_ENABLE_APP_CURSOR;
@@ -358,11 +361,27 @@ namespace rtl
 
                 case WM_SIZE:
                 {
-                    if ( that )
-                        that->m_sized = true;
+                    if ( wParam != SIZE_MINIMIZED )
+                    {
+                        if ( that )
+                            that->m_sized = true;
+                    }
 
                     break;
                 }
+
+                case WM_GETMINMAXINFO:
+                {
+                    if ( that )
+                    {
+                        MINMAXINFO* minmax = reinterpret_cast<MINMAXINFO*>( lParam );
+                        minmax->ptMinTrackSize.x = minimal_width;
+                        minmax->ptMinTrackSize.y = minimal_height;
+                    }
+
+                    break;
+                }
+
     #endif
 
                 case WM_PAINT:
