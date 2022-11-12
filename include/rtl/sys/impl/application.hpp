@@ -38,8 +38,9 @@ namespace rtl
                              application::update_function* on_update );
                 void destroy();
 
-                int width() const;
-                int height() const;
+                int  width() const;
+                int  height() const;
+                bool fullscreen() const;
 
             private:
                 void destroy_resizable_components();
@@ -114,6 +115,15 @@ namespace rtl
                 return m_client_rect.bottom - m_client_rect.top;
             }
 
+            bool window::fullscreen() const
+            {
+    #if RTL_ENABLE_APP_RESIZE
+                return m_fullscreen;
+    #else
+                return RTL_ENABLE_APP_FULLSCREEN;
+    #endif
+            }
+
             void window::create( const wchar_t* window_name )
             {
                 m_window_class.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
@@ -126,7 +136,7 @@ namespace rtl
                 m_window_class.hbrBackground = ( HBRUSH )::GetStockObject( BLACK_BRUSH );
                 RTL_WINAPI_CHECK( m_window_class.hbrBackground != nullptr );
 
-                if ( has_cursor )
+                if constexpr ( has_cursor || is_resizable )
                 {
                     m_window_class.hCursor = ::LoadCursorW( nullptr, IDC_ARROW );
                     RTL_WINAPI_CHECK( m_window_class.hCursor != nullptr );
@@ -434,11 +444,13 @@ namespace rtl
                 }
 
                 case WM_SETCURSOR:
-                    if ( !has_cursor )
+                    if constexpr ( !has_cursor || is_resizable )
                     {
                         if ( LOWORD( lParam ) == HTCLIENT )
                         {
-                            SetCursor( nullptr );
+                            ::SetCursor( !has_cursor || that->fullscreen()
+                                             ? nullptr
+                                             : that->m_window_class.hCursor );
                             return TRUE;
                         }
                     }
