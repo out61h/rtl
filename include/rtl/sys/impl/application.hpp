@@ -36,7 +36,6 @@ namespace rtl
                 void create( const wchar_t* window_name );
                 void update( application::reset_function*  on_resize,
                              application::update_function* on_update );
-                void invalidate();
                 void destroy();
 
                 int width() const;
@@ -45,21 +44,28 @@ namespace rtl
             private:
                 void destroy_resizable_components();
                 void resize();
+                void invalidate();
+
+    #if RTL_ENABLE_APP_RESIZE
+                void toggle_fullscreen_mode();
+    #endif
 
     #if RTL_ENABLE_APP_OSD
                 void init_osd_text( int width, int height );
                 void draw_osd_text();
     #endif
-
                 static constexpr bool is_fullscreen = RTL_ENABLE_APP_FULLSCREEN;
                 static constexpr bool is_resizable = RTL_ENABLE_APP_RESIZE;
                 static constexpr bool has_cursor = RTL_ENABLE_APP_CURSOR;
 
+                static constexpr DWORD fullscreen_style = WS_POPUP;
+                static constexpr DWORD resizable_style = WS_OVERLAPPEDWINDOW;
+                static constexpr DWORD fixed_style
+                    = WS_OVERLAPPEDWINDOW & ~WS_MAXIMIZEBOX & ~WS_THICKFRAME;
+
                 static constexpr DWORD style
-                    = is_fullscreen
-                          ? WS_POPUP
-                          : ( !is_resizable ? WS_OVERLAPPEDWINDOW & ~WS_MAXIMIZEBOX & ~WS_THICKFRAME
-                                            : WS_OVERLAPPEDWINDOW );
+                    = is_fullscreen ? fullscreen_style
+                                    : ( is_resizable ? resizable_style : fixed_style );
 
                 static LRESULT CALLBACK wnd_proc( HWND   hWnd,
                                                   UINT   uMsg,
@@ -84,7 +90,10 @@ namespace rtl
     #if RTL_ENABLE_APP_RESIZE
                 bool m_sizing{ false };
                 bool m_sized{ false };
-                bool m_pad[2]{ false };
+                bool m_fullscreen{ false };
+                bool m_pad{ false };
+
+                WINDOWPLACEMENT m_placement;
     #endif
 
     #if RTL_ENABLE_APP_OSD
@@ -126,6 +135,11 @@ namespace rtl
 
                 [[maybe_unused]] ATOM atom = ::RegisterClassW( &m_window_class );
                 RTL_WINAPI_CHECK( atom != 0 );
+
+    #if RTL_ENABLE_APP_RESIZE
+                m_fullscreen = is_fullscreen;
+                m_placement.length = sizeof( m_placement );
+    #endif
 
                 BOOL result;
                 RECT window_rect;
@@ -246,6 +260,51 @@ namespace rtl
                 result = ::DestroyWindow( m_window_handle );
                 RTL_WINAPI_CHECK( result );
             }
+
+    #if RTL_ENABLE_APP_RESIZE
+            void window::toggle_fullscreen_mode()
+            {
+                m_fullscreen = !m_fullscreen;
+
+                [[maybe_unused]] BOOL result;
+
+                if ( m_fullscreen )
+                {
+                    result = ::GetWindowPlacement( m_window_handle, &m_placement );
+                    RTL_WINAPI_CHECK( result );
+
+                    [[maybe_unused]] LONG res = ::SetWindowLongW(
+                        m_window_handle,
+                        GWL_STYLE,
+                        (LONG)( m_fullscreen ? fullscreen_style : resizable_style ) );
+                    RTL_WINAPI_CHECK( res != 0 );
+
+                    RECT rect;
+                    result = ::GetWindowRect( ::GetDesktopWindow(), &rect );
+                    RTL_WINAPI_CHECK( result );
+
+                    result = ::SetWindowPos( m_window_handle,
+                                             HWND_TOP,
+                                             0,
+                                             0,
+                                             rect.right - rect.left,
+                                             rect.bottom - rect.top,
+                                             SWP_SHOWWINDOW );
+                    RTL_WINAPI_CHECK( result );
+                }
+                else
+                {
+                    [[maybe_unused]] LONG res = ::SetWindowLongW(
+                        m_window_handle,
+                        GWL_STYLE,
+                        (LONG)( m_fullscreen ? fullscreen_style : resizable_style ) );
+                    RTL_WINAPI_CHECK( res != 0 );
+
+                    result = ::SetWindowPlacement( m_window_handle, &m_placement );
+                    RTL_WINAPI_CHECK( result );
+                }
+            }
+    #endif
 
             LRESULT window::wnd_proc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
             {
@@ -403,13 +462,22 @@ namespace rtl
                     m_input.keys.pressed[i] = false;
     #endif
 
-                if ( action == application::action::close )
+                switch ( action )
                 {
+                case application::action::close:
                     ::PostQuitMessage( 0 );
-                }
-                else
-                {
+                    break;
+
+    #if RTL_ENABLE_APP_RESIZE
+                case application::action::toggle_fullscreen:
+                    toggle_fullscreen_mode();
+                    break;
+    #endif
+
+                case application::action::none:
+                default:
                     invalidate();
+                    break;
                 }
             }
 

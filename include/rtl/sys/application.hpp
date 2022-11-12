@@ -78,7 +78,10 @@ namespace rtl
         enum class action
         {
             none,
-            close
+            close,
+    #if RTL_ENABLE_APP_RESIZE
+            toggle_fullscreen,
+    #endif
         };
 
         using update_function = action( const input&, output& );
@@ -87,6 +90,7 @@ namespace rtl
     public:
         static application& instance();
 
+        // TODO: add the ability to specify initial window size (usefully for emulators)
         void run( const wchar_t* app_name, reset_function* on_reset, update_function* on_update );
 
     private:
