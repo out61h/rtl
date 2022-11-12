@@ -47,7 +47,7 @@ namespace rtl
                 void invalidate();
 
     #if RTL_ENABLE_APP_RESIZE
-                void toggle_fullscreen_mode();
+                void set_fullscreen_mode( bool fullscreen );
     #endif
 
     #if RTL_ENABLE_APP_OSD
@@ -62,10 +62,6 @@ namespace rtl
                 static constexpr DWORD resizable_style = WS_OVERLAPPEDWINDOW;
                 static constexpr DWORD fixed_style
                     = WS_OVERLAPPEDWINDOW & ~WS_MAXIMIZEBOX & ~WS_THICKFRAME;
-
-                static constexpr DWORD style
-                    = is_fullscreen ? fullscreen_style
-                                    : ( is_resizable ? resizable_style : fixed_style );
 
                 static LRESULT CALLBACK wnd_proc( HWND   hWnd,
                                                   UINT   uMsg,
@@ -136,11 +132,6 @@ namespace rtl
                 [[maybe_unused]] ATOM atom = ::RegisterClassW( &m_window_class );
                 RTL_WINAPI_CHECK( atom != 0 );
 
-    #if RTL_ENABLE_APP_RESIZE
-                m_fullscreen = is_fullscreen;
-                m_placement.length = sizeof( m_placement );
-    #endif
-
                 BOOL result;
                 RECT window_rect;
 
@@ -154,16 +145,27 @@ namespace rtl
                     WS_EX_APPWINDOW,
                     m_window_class.lpszClassName,
                     window_name,
-                    style,
+                    is_fullscreen && !is_resizable ? fullscreen_style
+                    : is_resizable                 ? resizable_style
+                                                   : fixed_style,
                     CW_USEDEFAULT,
                     CW_USEDEFAULT,
-                    is_fullscreen ? window_rect.right - window_rect.left : CW_USEDEFAULT,
-                    is_fullscreen ? window_rect.bottom - window_rect.top : CW_USEDEFAULT,
+                    is_fullscreen && !is_resizable ? window_rect.right - window_rect.left
+                                                   : CW_USEDEFAULT,
+                    is_fullscreen && !is_resizable ? window_rect.bottom - window_rect.top
+                                                   : CW_USEDEFAULT,
                     nullptr,
                     nullptr,
                     m_window_class.hInstance,
                     nullptr ); // TODO: this?
                 RTL_WINAPI_CHECK( m_window_handle != nullptr );
+
+    #if RTL_ENABLE_APP_RESIZE
+                m_placement.length = sizeof( m_placement );
+
+                if ( is_fullscreen )
+                    set_fullscreen_mode( true );
+    #endif
 
                 static_assert( sizeof( this ) == sizeof( LONG_PTR ) );
                 ::SetWindowLongPtrW(
@@ -262,9 +264,9 @@ namespace rtl
             }
 
     #if RTL_ENABLE_APP_RESIZE
-            void window::toggle_fullscreen_mode()
+            void window::set_fullscreen_mode( bool fullscreen )
             {
-                m_fullscreen = !m_fullscreen;
+                m_fullscreen = fullscreen;
 
                 [[maybe_unused]] BOOL result;
 
@@ -470,7 +472,7 @@ namespace rtl
 
     #if RTL_ENABLE_APP_RESIZE
                 case application::action::toggle_fullscreen:
-                    toggle_fullscreen_mode();
+                    set_fullscreen_mode( !m_fullscreen );
                     break;
     #endif
 
