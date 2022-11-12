@@ -19,4 +19,6 @@
 #include "impl/printf.hpp"
 #include "impl/startup.hpp"
 
+#include "impl/app/osd.hpp"
+
 #undef RTL_IMPLEMENTATION
