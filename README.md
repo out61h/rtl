@@ -1,6 +1,6 @@
 # RTL: RunTime Library
 
-RTL is a substitution of the C++ standard runtime library with some additional features. 
+RTL is a very small (partial) substitution of the C++ standard runtime library with some additional features. 
 
 ## About the Project
 
