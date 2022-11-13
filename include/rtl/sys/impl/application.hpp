@@ -33,29 +33,40 @@ namespace rtl
             class window final
             {
             public:
-                void create( const wchar_t* window_name );
+                void create( const wchar_t* window_name, application::reset_function* on_init );
                 void update( application::reset_function*  on_resize,
                              application::update_function* on_update );
-                void destroy();
 
                 int  width() const;
                 int  height() const;
                 bool fullscreen() const;
 
             private:
+                void destroy();
+
+                void create_resizable_components();
                 void destroy_resizable_components();
-                void resize();
-                void invalidate();
 
     #if RTL_ENABLE_APP_RESIZE
                 void set_fullscreen_mode( bool fullscreen );
     #endif
 
-    #if RTL_ENABLE_APP_OSD
-                void init_osd_text( int width, int height );
-                void draw_osd_text();
-    #endif
+    #if RTL_ENABLE_APP_SCREEN_BUFFER
+                void init_screen_buffer( int width, int height );
+                void draw_screen_buffer( HDC hdc );
+                void free_screen_buffer();
+                void commit_screen_buffer();
 
+        #if RTL_ENABLE_APP_OSD
+                void init_osd_text( int width, int height );
+                void draw_osd_text( HDC hdc );
+                void free_osd_text();
+        #endif
+    #elif RTL_ENABLE_APP_OPENGL
+                void  init_opengl( int width, int height );
+                void  free_opengl();
+                void  commit_opengl();
+    #endif
                 static constexpr int  minimal_width = 600;
                 static constexpr int  minimal_height = 400;
                 static constexpr bool is_fullscreen = RTL_ENABLE_APP_FULLSCREEN;
@@ -75,7 +86,6 @@ namespace rtl
                 // NOTE: all variables must be initialized to zero
                 WNDCLASSW m_window_class{ 0 };
 
-                HDC  m_device_context_handle{ nullptr };
                 HWND m_window_handle{ nullptr };
                 RECT m_client_rect{ 0 };
 
@@ -88,21 +98,26 @@ namespace rtl
                 bool m_fullscreen{ false };
                 bool m_pad{ false };
 
-                WINDOWPLACEMENT m_placement;
+                WINDOWPLACEMENT m_placement{ 0 };
     #endif
 
-    #if RTL_ENABLE_APP_SCREEN
+    #if RTL_ENABLE_APP_SCREEN_BUFFER
+                HDC m_screen_buffer_dc{ nullptr };
+
                 BITMAPINFO m_bitmap_info{ 0 };
                 HBITMAP    m_bitmap_handle{ nullptr };
-    #endif
 
-    #if RTL_ENABLE_APP_OSD
+        #if RTL_ENABLE_APP_OSD
                 static constexpr auto osd_locations_count
                     = (size_t)application::output::osd::location::count;
 
                 RECT  m_osd_rects[osd_locations_count]{ 0 };
                 UINT  m_osd_params[osd_locations_count]{ 0 };
                 HFONT m_osd_font{ nullptr };
+        #endif
+    #elif RTL_ENABLE_APP_OPENGL
+                HGLRC m_glrc_handle{ 0 };
+                HDC   m_window_dc{ 0 };
     #endif
             };
 
@@ -125,7 +140,7 @@ namespace rtl
     #endif
             }
 
-            void window::create( const wchar_t* window_name )
+            void window::create( const wchar_t* window_name, application::reset_function* on_init )
             {
                 m_window_class.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
                 m_window_class.lpfnWndProc = wnd_proc;
@@ -180,92 +195,53 @@ namespace rtl
                 if constexpr ( is_fullscreen )
                     set_fullscreen_mode( true );
     #endif
+                {
+                    // TODO: move to WM_CREATE?
+                    static_assert( sizeof( this ) == sizeof( LONG_PTR ) );
+                    ::SetWindowLongPtrW(
+                        m_window_handle, GWL_USERDATA, reinterpret_cast<LONG_PTR>( this ) );
 
-                static_assert( sizeof( this ) == sizeof( LONG_PTR ) );
-                ::SetWindowLongPtrW(
-                    m_window_handle, GWL_USERDATA, reinterpret_cast<LONG_PTR>( this ) );
+                    create_resizable_components();
+                }
 
-                // TODO: Check order of subsequent calls
                 ::ShowWindow( m_window_handle, SW_SHOW );
 
                 result = ::UpdateWindow( m_window_handle );
                 RTL_WINAPI_CHECK( result );
 
-                HDC hdc = ::GetDC( m_window_handle );
-                RTL_WINAPI_CHECK( hdc != nullptr );
-
-                m_device_context_handle = ::CreateCompatibleDC( hdc );
-                RTL_WINAPI_CHECK( m_device_context_handle != nullptr );
-
-                ::ReleaseDC( m_window_handle, hdc );
-
-                resize();
+                on_init( m_input );
             }
 
-            void window::resize()
+            void window::create_resizable_components()
             {
                 [[maybe_unused]] BOOL result = ::GetClientRect( m_window_handle, &m_client_rect );
                 RTL_WINAPI_CHECK( result );
 
-                [[maybe_unused]] const int width = this->width();
-                [[maybe_unused]] const int height = this->height();
+                const int width = this->width();
+                const int height = this->height();
 
-    #if RTL_ENABLE_APP_SCREEN
-                {
-                    m_bitmap_info.bmiHeader.biWidth = width;
-                    m_bitmap_info.bmiHeader.biHeight = -height;
-                    m_bitmap_info.bmiHeader.biSize = sizeof( BITMAPINFOHEADER );
-                    m_bitmap_info.bmiHeader.biPlanes = 1;
-                    m_bitmap_info.bmiHeader.biBitCount = 24;
-                    m_bitmap_info.bmiHeader.biCompression = BI_RGB;
-                    m_bitmap_info.bmiHeader.biXPelsPerMeter = 0x130B;
-                    m_bitmap_info.bmiHeader.biYPelsPerMeter = 0x130B;
+                m_input.screen.width = width;
+                m_input.screen.height = height;
 
-                    RTL_ASSERT( m_bitmap_handle == nullptr );
-
-                    m_bitmap_handle
-                        = ::CreateDIBSection( m_device_context_handle,
-                                              &m_bitmap_info,
-                                              DIB_RGB_COLORS,
-                                              reinterpret_cast<void**>( &m_output.screen.pixels ),
-                                              nullptr,
-                                              0 );
-                    RTL_WINAPI_CHECK( m_bitmap_handle != nullptr );
-
-                    constexpr size_t sizeof_rgb = 3;
-                    constexpr size_t align = sizeof( LONG );
-
-                    m_output.screen.pitch
-                        = ( ( ( sizeof_rgb * width ) + align - 1 ) / align ) * align;
-                }
-
-                m_output.screen.width = width;
-                m_output.screen.height = height;
-    #endif
-
-    #if RTL_ENABLE_APP_OSD
+    #if RTL_ENABLE_APP_SCREEN_BUFFER
+                init_screen_buffer( width, height );
+        #if RTL_ENABLE_APP_OSD
                 init_osd_text( width, height );
+        #endif
+    #elif RTL_ENABLE_APP_OPENGL
+                init_opengl( width, height );
     #endif
             }
 
             void window::destroy_resizable_components()
             {
-    #if RTL_ENABLE_APP_OSD
-                if ( m_osd_font )
-                {
-                    [[maybe_unused]] BOOL result = ::DeleteObject( m_osd_font );
-                    RTL_WINAPI_CHECK( result );
-                    m_osd_font = nullptr;
-                }
-    #endif
-
-    #if RTL_ENABLE_APP_SCREEN
-                if ( m_bitmap_handle )
-                {
-                    [[maybe_unused]] BOOL result = ::DeleteObject( m_bitmap_handle );
-                    RTL_WINAPI_CHECK( result );
-                    m_bitmap_handle = nullptr;
-                }
+    #if RTL_ENABLE_APP_SCREEN_BUFFER
+        #if RTL_ENABLE_APP_OSD
+                free_osd_text();
+        #endif
+                free_screen_buffer();
+    #elif RTL_ENABLE_APP_OPENGL
+                free_opengl();
     #endif
             }
 
@@ -273,205 +249,11 @@ namespace rtl
             {
                 destroy_resizable_components();
 
-                BOOL result;
-                result = ::DeleteDC( m_device_context_handle );
+                [[maybe_unused]] BOOL result = ::DestroyWindow( m_window_handle );
                 RTL_WINAPI_CHECK( result );
 
-                result = ::DestroyWindow( m_window_handle );
-                RTL_WINAPI_CHECK( result );
-            }
-
-    #if RTL_ENABLE_APP_RESIZE
-            void window::set_fullscreen_mode( bool fullscreen )
-            {
-                m_fullscreen = fullscreen;
-
-                [[maybe_unused]] BOOL result;
-
-                if ( m_fullscreen )
-                {
-                    result = ::GetWindowPlacement( m_window_handle, &m_placement );
-                    RTL_WINAPI_CHECK( result );
-
-                    [[maybe_unused]] LONG res = ::SetWindowLongW(
-                        m_window_handle,
-                        GWL_STYLE,
-                        (LONG)( m_fullscreen ? fullscreen_style : resizable_style ) );
-                    RTL_WINAPI_CHECK( res != 0 );
-
-                    RECT rect;
-                    result = ::GetWindowRect( ::GetDesktopWindow(), &rect );
-                    RTL_WINAPI_CHECK( result );
-
-                    result = ::SetWindowPos( m_window_handle,
-                                             HWND_TOP,
-                                             0,
-                                             0,
-                                             rect.right - rect.left,
-                                             rect.bottom - rect.top,
-                                             SWP_SHOWWINDOW );
-                    RTL_WINAPI_CHECK( result );
-                }
-                else
-                {
-                    [[maybe_unused]] LONG res = ::SetWindowLongW(
-                        m_window_handle,
-                        GWL_STYLE,
-                        (LONG)( m_fullscreen ? fullscreen_style : resizable_style ) );
-                    RTL_WINAPI_CHECK( res != 0 );
-
-                    result = ::SetWindowPlacement( m_window_handle, &m_placement );
-                    RTL_WINAPI_CHECK( result );
-                }
-            }
-    #endif
-
-            LRESULT window::wnd_proc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
-            {
-                window* that
-                    = reinterpret_cast<window*>( ::GetWindowLongPtrW( hWnd, GWL_USERDATA ) );
-
-                switch ( uMsg )
-                {
-                case WM_CLOSE:
-                    ::PostQuitMessage( 0 );
-                    return 0;
-
-    #if RTL_ENABLE_APP_KEYS
-                case WM_KEYDOWN:
-                {
-                    const int key = static_cast<int>( virtual_key_to_enum( wParam ) );
-
-                    if ( !that->m_input.keys.state[key] )
-                        that->m_input.keys.pressed[key] = true;
-
-                    that->m_input.keys.state[key] = true;
-                    return 0;
-                }
-
-                case WM_KEYUP:
-                {
-                    const int key = static_cast<int>( virtual_key_to_enum( wParam ) );
-                    that->m_input.keys.state[key] = false;
-                    return 0;
-                }
-    #endif
-
-    #if RTL_ENABLE_APP_RESIZE
-                case WM_SIZING:
-                {
-                    if ( that )
-                        that->m_sizing = true;
-
-                    return 0;
-                }
-
-                case WM_EXITSIZEMOVE:
-                {
-                    if ( that )
-                        that->m_sizing = false;
-
-                    break;
-                }
-
-                case WM_SIZE:
-                {
-                    if ( wParam != SIZE_MINIMIZED )
-                    {
-                        if ( that )
-                            that->m_sized = true;
-                    }
-
-                    break;
-                }
-
-                case WM_GETMINMAXINFO:
-                {
-                    if ( that )
-                    {
-                        MINMAXINFO* minmax = reinterpret_cast<MINMAXINFO*>( lParam );
-                        minmax->ptMinTrackSize.x = minimal_width;
-                        minmax->ptMinTrackSize.y = minimal_height;
-                    }
-
-                    break;
-                }
-
-    #endif
-
-                case WM_PAINT:
-                {
-    #if RTL_ENABLE_APP_RESIZE
-                    if ( that->m_sizing )
-                        break;
-    #endif
-                    PAINTSTRUCT ps;
-
-                    HDC hdc = ::BeginPaint( hWnd, &ps );
-                    RTL_WINAPI_CHECK( hdc != nullptr );
-
-                    if ( that->m_device_context_handle )
-                    {
-    #if RTL_ENABLE_APP_OSD
-                        that->draw_osd_text();
-    #endif
-
-    #if RTL_ENABLE_APP_SCREEN
-                        [[maybe_unused]] HGDIOBJ object = ::SelectObject(
-                            that->m_device_context_handle, that->m_bitmap_handle );
-                        RTL_WINAPI_CHECK( object != nullptr );
-                        RTL_ASSERT( ::GetObjectType( object ) == OBJ_BITMAP );
-
-                        const int width = that->m_bitmap_info.bmiHeader.biWidth;
-                        const int height = -that->m_bitmap_info.bmiHeader.biHeight;
-
-                        RTL_ASSERT( width <= that->width() );
-                        RTL_ASSERT( height <= that->height() );
-
-                        [[maybe_unused]] BOOL result = ::BitBlt( hdc,
-                                                                 ( that->width() - width ) / 2,
-                                                                 ( that->height() - height ) / 2,
-                                                                 width,
-                                                                 height,
-                                                                 that->m_device_context_handle,
-                                                                 0,
-                                                                 0,
-                                                                 SRCCOPY );
-                        RTL_WINAPI_CHECK( result );
-
-                            // TODO: This call brokes font rendering, deal with it later
-                            // object = ::SelectObject( that->m_device_context_handle, object );
-                            // RTL_ASSERT( object == that->m_bitmap_handle );
-    #endif
-                    }
-
-                    [[maybe_unused]] BOOL result = ::EndPaint( hWnd, &ps );
-                    RTL_WINAPI_CHECK( result );
-                    return 0;
-                }
-
-                case WM_SETCURSOR:
-                    if constexpr ( !has_cursor || is_resizable )
-                    {
-                        if ( LOWORD( lParam ) == HTCLIENT )
-                        {
-                            ::SetCursor( !has_cursor || that->fullscreen()
-                                             ? nullptr
-                                             : that->m_window_class.hCursor );
-                            return TRUE;
-                        }
-                    }
-
-                    break;
-                }
-
-                return ::DefWindowProcW( hWnd, uMsg, wParam, lParam );
-            }
-
-            void window::invalidate()
-            {
-                [[maybe_unused]] BOOL result = ::InvalidateRect( m_window_handle, nullptr, FALSE );
-                RTL_WINAPI_CHECK( result );
+                // NOTE: Non-critical for the application beying terminated
+                // ::UnregisterClassW( m_window_class.lpszClassName, m_window_class.hInstance );
             }
 
             void window::update( [[maybe_unused]] application::reset_function* on_resize,
@@ -489,8 +271,8 @@ namespace rtl
                 if ( m_sized )
                 {
                     destroy_resizable_components();
-                    resize();
-                    on_resize();
+                    create_resizable_components();
+                    on_resize( m_input );
                     m_sized = false;
                 }
     #endif
@@ -505,7 +287,7 @@ namespace rtl
                 switch ( action )
                 {
                 case application::action::close:
-                    ::PostQuitMessage( 0 );
+                    result = ::DestroyWindow( m_window_handle );
                     break;
 
     #if RTL_ENABLE_APP_RESIZE
@@ -516,7 +298,11 @@ namespace rtl
 
                 case application::action::none:
                 default:
-                    invalidate();
+    #if RTL_ENABLE_APP_SCREEN_BUFFER
+                    commit_screen_buffer();
+    #elif RTL_ENABLE_APP_OPENGL
+                    commit_opengl();
+    #endif
                     break;
                 }
             }
@@ -531,9 +317,7 @@ namespace rtl
                            reset_function*  on_reset,
                            update_function* on_update )
     {
-        impl::win::g_window.create( app_name );
-
-        on_reset();
+        impl::win::g_window.create( app_name, on_reset );
 
         MSG msg{ 0 };
 
@@ -561,8 +345,6 @@ namespace rtl
             impl::win::g_window.update( on_reset, on_update );
         }
     #endif
-
-        impl::win::g_window.destroy();
     }
 
     application& application::instance()

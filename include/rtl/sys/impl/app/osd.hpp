@@ -18,6 +18,9 @@
 
 #if RTL_ENABLE_APP
     #if RTL_ENABLE_APP_OSD
+        #if !RTL_ENABLE_APP_SCREEN_BUFFER
+            #error "RTL_ENABLE_APP_OSD=1 needs RTL_ENABLE_APP_SCREEN_BUFFER=1"
+        #endif
 
 namespace rtl
 {
@@ -30,29 +33,29 @@ namespace rtl
                 RTL_ASSERT( m_osd_font == nullptr );
 
                 m_osd_font = ::CreateFontW( application::output::osd::font_size * width / 1280,
-                                        0,
-                                        0,
-                                        0,
-                                        FW_DONTCARE,
-                                        FALSE,
-                                        FALSE,
-                                        FALSE,
-                                        DEFAULT_CHARSET,
-                                        OUT_DEFAULT_PRECIS,
-                                        CLIP_DEFAULT_PRECIS,
-                                        DEFAULT_QUALITY,
-                                        DEFAULT_PITCH | FF_DONTCARE,
-                                        NULL );
-                HGDIOBJ object = ::SelectObject( m_device_context_handle, m_osd_font );
+                                            0,
+                                            0,
+                                            0,
+                                            FW_DONTCARE,
+                                            FALSE,
+                                            FALSE,
+                                            FALSE,
+                                            DEFAULT_CHARSET,
+                                            OUT_DEFAULT_PRECIS,
+                                            CLIP_DEFAULT_PRECIS,
+                                            DEFAULT_QUALITY,
+                                            DEFAULT_PITCH | FF_DONTCARE,
+                                            NULL );
+                HGDIOBJ object = ::SelectObject( m_screen_buffer_dc, m_osd_font );
                 RTL_WINAPI_CHECK( object != nullptr );
                 RTL_ASSERT( ::GetObjectType( object ) == OBJ_FONT );
 
                 TEXTMETRIC tm;
 
-                [[maybe_unused]] BOOL result = ::GetTextMetricsW( m_device_context_handle, &tm );
+                [[maybe_unused]] BOOL result = ::GetTextMetricsW( m_screen_buffer_dc, &tm );
                 RTL_WINAPI_CHECK( result );
 
-                object = ::SelectObject( m_device_context_handle, object );
+                object = ::SelectObject( m_screen_buffer_dc, object );
                 RTL_ASSERT( object == m_osd_font );
 
                 const int     font_height = tm.tmHeight;
@@ -87,33 +90,33 @@ namespace rtl
                 m_osd_rects[i3].bottom = height - osd_margin;
                 m_osd_params[i3] = DT_TOP | DT_RIGHT | DT_NOCLIP;
 
-        #if RTL_ENABLE_APP_SCREEN
-                m_output.screen.pixels += m_output.screen.pitch * osd_height;
-                m_output.screen.height -= osd_height * 2;
-        #endif
+                m_input.screen.pixels += m_input.screen.pitch * osd_height;
+                m_input.screen.height -= osd_height * 2;
             }
 
-            void window::draw_osd_text()
+            void window::draw_osd_text( [[maybe_unused]] HDC hdc )
             {
+                // It's necessary to clear all text output area to erase old text
                 for ( int i = 0; i < osd_locations_count; ++i )
                 {
                     [[maybe_unused]] const int res = ::FillRect(
-                        m_device_context_handle, &m_osd_rects[i], m_window_class.hbrBackground );
+                        m_screen_buffer_dc, &m_osd_rects[i], m_window_class.hbrBackground );
                     RTL_WINAPI_CHECK( res != 0 );
                 }
 
-                HGDIOBJ object = ::SelectObject( m_device_context_handle, m_osd_font );
+                // NOTE: Drawing to back buffer to prevent flickering
+                HGDIOBJ object = ::SelectObject( m_screen_buffer_dc, m_osd_font );
                 RTL_WINAPI_CHECK( object != nullptr );
                 RTL_ASSERT( ::GetObjectType( object ) == OBJ_FONT );
 
                 // NOTE: The same color as background one.
-                ::SetBkColor( m_device_context_handle, RGB( 0, 0, 0 ) );
-                // ::SetBkMode( m_device_context_handle, TRANSPARENT );
-                ::SetTextColor( m_device_context_handle, RGB( 255, 255, 255 ) );
+                ::SetBkColor( m_screen_buffer_dc, RGB( 0, 0, 0 ) );
+                // ::SetBkMode( m_screen_buffer_dc, TRANSPARENT );
+                ::SetTextColor( m_screen_buffer_dc, RGB( 255, 255, 255 ) );
 
                 for ( int i = 0; i < osd_locations_count; ++i )
                 {
-                    [[maybe_unused]] const int res = ::DrawTextW( m_device_context_handle,
+                    [[maybe_unused]] const int res = ::DrawTextW( m_screen_buffer_dc,
                                                                   m_output.osd.text[i],
                                                                   -1,
                                                                   &m_osd_rects[i],
@@ -121,11 +124,23 @@ namespace rtl
                     RTL_WINAPI_CHECK( res != 0 );
                 }
 
-                object = ::SelectObject( m_device_context_handle, object );
+                object = ::SelectObject( m_screen_buffer_dc, object );
                 RTL_ASSERT( object == m_osd_font );
             }
+
+            void window::free_osd_text()
+            {
+                if ( m_osd_font )
+                {
+                    [[maybe_unused]] BOOL result = ::DeleteObject( m_osd_font );
+                    RTL_WINAPI_CHECK( result );
+                    m_osd_font = nullptr;
+                }
+            }
         } // namespace win
-    }     // namespace impl
+
+    } // namespace impl
 } // namespace rtl
+
     #endif
 #endif

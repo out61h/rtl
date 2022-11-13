@@ -42,23 +42,25 @@ namespace rtl
                 int32_t thirds;
             } clock;
     #endif
+
+            struct screen
+            {
+                int width;
+                int height;
+
+    #if RTL_ENABLE_APP_SCREEN_BUFFER
+                uint8_t* pixels;
+                size_t   pitch;
+    #endif
+            } screen;
         };
 
         struct output
         {
             void* void_sink; // CAUTION: it is better to NOT touch it!!!
 
-    #if RTL_ENABLE_APP_SCREEN
-            struct screen
-            {
-                uint8_t* pixels;
-                int      width;
-                int      height;
-                size_t   pitch;
-            } screen;
-    #endif
-
-    #if RTL_ENABLE_APP_OSD
+    #if RTL_ENABLE_APP_SCREEN_BUFFER
+        #if RTL_ENABLE_APP_OSD
             struct osd
             {
                 static constexpr auto text_length = 256;
@@ -76,6 +78,7 @@ namespace rtl
 
                 wchar_t text[(size_t)location::count][text_length];
             } osd;
+        #endif
     #endif
         };
 
@@ -89,7 +92,7 @@ namespace rtl
         };
 
         using update_function = action( const input&, output& );
-        using reset_function = void();
+        using reset_function = void( const input& );
 
     public:
         static application& instance();

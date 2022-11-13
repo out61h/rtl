@@ -19,6 +19,10 @@
 #include "impl/printf.hpp"
 #include "impl/startup.hpp"
 
+#include "impl/app/opengl.hpp"
 #include "impl/app/osd.hpp"
+#include "impl/app/proc.hpp"
+#include "impl/app/resize.hpp"
+#include "impl/app/screen_buffer.hpp"
 
 #undef RTL_IMPLEMENTATION
