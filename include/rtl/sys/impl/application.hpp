@@ -15,6 +15,7 @@
 #endif
 
 #include <rtl/algorithm.hpp>
+#include <rtl/memory.hpp>
 #include <rtl/sys/application.hpp>
 #include <rtl/sys/debug.hpp>
 
@@ -33,7 +34,7 @@ namespace rtl
             class window final
             {
             public:
-                void create( const wchar_t* window_name, application::reset_function* on_init );
+                void create( const wchar_t* app_name, application::reset_function* on_init );
                 void update( application::reset_function*  on_resize,
                              application::update_function* on_update );
 
@@ -141,11 +142,11 @@ namespace rtl
     #endif
             }
 
-            void window::create( const wchar_t* window_name, application::reset_function* on_init )
+            void window::create( const wchar_t* app_name, application::reset_function* on_init )
             {
                 m_window_class.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
                 m_window_class.lpfnWndProc = wnd_proc;
-                m_window_class.lpszClassName = L".";
+                m_window_class.lpszClassName = app_name;
 
                 m_window_class.hInstance = ::GetModuleHandleW( nullptr );
                 RTL_WINAPI_CHECK( m_window_class.hInstance != nullptr );
@@ -174,7 +175,7 @@ namespace rtl
                 m_window_handle = ::CreateWindowExW(
                     WS_EX_APPWINDOW,
                     m_window_class.lpszClassName,
-                    window_name,
+                    app_name,
                     is_fullscreen && !is_resizable ? fullscreen_style
                     : is_resizable                 ? resizable_style
                                                    : fixed_style,
@@ -248,6 +249,8 @@ namespace rtl
 
             void window::destroy()
             {
+                m_inited = false;
+
                 destroy_resizable_components();
 
                 [[maybe_unused]] BOOL result = ::DestroyWindow( m_window_handle );
@@ -260,6 +263,9 @@ namespace rtl
             void window::update( [[maybe_unused]] application::reset_function* on_resize,
                                  application::update_function*                 on_update )
             {
+                if ( !m_inited )
+                    return;
+
                 [[maybe_unused]] BOOL result = ::GdiFlush();
                 RTL_WINAPI_CHECK( result );
 
@@ -318,6 +324,24 @@ namespace rtl
                            reset_function*  on_reset,
                            update_function* on_update )
     {
+    #if RTL_ENABLE_APP_SINGLETON
+        rtl::unique_ptr<void, decltype( &::CloseHandle )> mutex(
+            ::OpenMutexW( SYNCHRONIZE, FALSE, app_name ), ::CloseHandle );
+
+        if ( mutex )
+        {
+            HWND wnd = ::FindWindowW( app_name, nullptr );
+            RTL_WINAPI_CHECK( wnd != nullptr );
+
+            ::ShowWindow( wnd, SW_SHOWNOACTIVATE );
+            ::SetForegroundWindow( wnd );
+            return;
+        }
+
+        mutex.reset( ::CreateMutexW( nullptr, FALSE, app_name ) );
+        RTL_WINAPI_CHECK( mutex != nullptr );
+    #endif
+
         impl::win::g_window.create( app_name, on_reset );
 
         MSG msg{ 0 };

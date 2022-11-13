@@ -109,6 +109,9 @@ namespace rtl
                     RTL_WINAPI_CHECK( result );
                     m_bitmap_handle = nullptr;
                 }
+
+                m_input.screen.pixels = nullptr;
+                m_input.screen.pitch = 0;
             }
 
             void window::commit_screen_buffer()
