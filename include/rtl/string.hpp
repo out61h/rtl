@@ -14,11 +14,13 @@
 
 namespace rtl
 {
-    // TODO: implement more methods    
+    // TODO: implement more methods
     template<typename T>
     class basic_string_view final
     {
     public:
+        static constexpr size_t npos = (size_t)-1;
+
         constexpr basic_string_view()
             : m_data( nullptr )
             , m_size( 0 )
@@ -65,6 +67,31 @@ namespace rtl
                     return false;
 
             return true;
+        }
+
+        // TODO: implement also in basic_string
+        [[nodiscard]] constexpr size_t find( const basic_string_view<T>& what ) const
+        {
+            // TODO: use Strsafe.h routines?
+            const T* str = data();
+            const T* str_end = data() + size();
+            const T* pattern = what.data();
+            const T* pattern_end = what.data() + what.size();
+
+            for ( ; str < str_end; ++str )
+            {
+                if ( *str == *pattern )
+                {
+                    if ( ++pattern >= pattern_end )
+                        return (size_t)( str - data() );
+                }
+                else
+                {
+                    pattern = what.data();
+                }
+            }
+
+            return npos;
         }
 
     private:
