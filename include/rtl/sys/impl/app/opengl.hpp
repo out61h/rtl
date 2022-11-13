@@ -14,7 +14,11 @@
     #error "Do not include implementation header directly, use <rtl/sys/impl.hpp>"
 #endif
 
+#include <rtl/string.hpp>
+
 #include <rtl/sys/impl/application.hpp>
+
+#include <gl/GL.h>
 
 #if RTL_ENABLE_APP
     #if RTL_ENABLE_APP_OPENGL
@@ -54,6 +58,10 @@ namespace rtl
 
                 result = ::wglMakeCurrent( m_window_dc, m_glrc_handle );
                 RTL_WINAPI_CHECK( result );
+
+        #if RTL_ENABLE_APP_OPENGL_VSYNC
+                enable_opengl_vsync();
+        #endif
             }
 
             void window::free_opengl()
@@ -79,6 +87,30 @@ namespace rtl
             void window::commit_opengl()
             {
                 ::SwapBuffers( m_window_dc );
+            }
+
+            void window::enable_opengl_vsync()
+            {
+                typedef BOOL( APIENTRY * PFNWGLSWAPINTERVALPROC )( int );
+
+                const char* const extensions
+                    = reinterpret_cast<const char*>( ::glGetString( GL_EXTENSIONS ) );
+                RTL_ASSERT( extensions != nullptr );
+
+                rtl::string_view ext( extensions );
+
+                if ( ext.find( "WGL_EXT_swap_control" ) != rtl::string_view::npos )
+                {
+                    void* const address = ::wglGetProcAddress( "wglSwapIntervalEXT" );
+                    RTL_ASSERT( address != nullptr );
+
+                    if ( auto wglSwapIntervalEXT = static_cast<PFNWGLSWAPINTERVALPROC>( address ) )
+                    {
+                        wglSwapIntervalEXT( 1 );
+
+                        RTL_LOG( "ON" );
+                    }
+                }
             }
 
         } // namespace win

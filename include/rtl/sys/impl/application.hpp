@@ -66,6 +66,7 @@ namespace rtl
                 void  init_opengl( int width, int height );
                 void  free_opengl();
                 void  commit_opengl();
+                void  enable_opengl_vsync();
     #endif
                 static constexpr int  minimal_width = 600;
                 static constexpr int  minimal_height = 400;
@@ -96,7 +97,7 @@ namespace rtl
                 bool m_sizing{ false };
                 bool m_sized{ false };
                 bool m_fullscreen{ false };
-                bool m_pad{ false };
+                bool m_inited{ false };
 
                 WINDOWPLACEMENT m_placement{ 0 };
     #endif

@@ -85,7 +85,10 @@ namespace rtl
                     if ( wParam != SIZE_MINIMIZED )
                     {
                         if ( that )
-                            that->m_sized = true;
+                        {
+                            that->m_sized = that->m_inited;
+                            that->m_inited = true;
+                        }
                     }
 
                     break;
