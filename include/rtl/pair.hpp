@@ -20,7 +20,7 @@ namespace rtl
     };
 
     template<typename T1, typename T2>
-    inline pair<T1, T2> make_pair( const T1& t1, const T2& t2 )
+    [[nodiscard]] constexpr pair<T1, T2> make_pair( const T1& t1, const T2& t2 )
     {
         pair<T1, T2> p;
         p.first = t1;
