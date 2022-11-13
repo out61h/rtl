@@ -4,9 +4,9 @@
  *
  * This file is part of the RTL library. Redistribution and use in source and
  * binary forms, with or without modification, are permitted exclusively
- * under the terms of the MIT license. You should have received a copy of the 
+ * under the terms of the MIT license. You should have received a copy of the
  * license with this file. If not, please visit:
- * https://github.com/out61h/rtl/blob/main/LICENSE. 
+ * https://github.com/out61h/rtl/blob/main/LICENSE.
  */
 #pragma once
 
@@ -64,7 +64,8 @@ namespace rtl
             // inapplicable)
             // TODO: %f support
             str += ::wsprintfA( str, "[%s]: ", function );
-            ::wvsprintfA( str, fmt, args );
+            str += ::wvsprintfA( str, fmt, args );
+            str += ::wsprintfA( str, "\n" );
 
             va_end( args );
 
