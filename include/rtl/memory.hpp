@@ -57,6 +57,18 @@ namespace rtl
             using type = T*;
         };
 
+        template<typename T>
+        struct is_pointer
+        {
+            static constexpr bool value = false;
+        };
+
+        template<typename T>
+        struct is_pointer<T*>
+        {
+            static constexpr bool value = true;
+        };
+
     } // namespace impl
 
     template<typename T, typename D = impl::default_deleter<T>>
@@ -69,12 +81,18 @@ namespace rtl
 
         constexpr unique_ptr()
             : m_ptr( pointer() )
+            , m_deleter( deleter_type() )
         {
+            static_assert( !impl::is_pointer<deleter_type>::value,
+                           "constructed with null function pointer deleter" );
         }
 
         constexpr explicit unique_ptr( pointer p )
             : m_ptr( p )
+            , m_deleter( deleter_type() )
         {
+            static_assert( !impl::is_pointer<deleter_type>::value,
+                           "constructed with null function pointer deleter" );
         }
 
         constexpr explicit unique_ptr( pointer p, deleter_type deleter )
@@ -82,6 +100,8 @@ namespace rtl
             , m_deleter( deleter )
         {
         }
+
+        constexpr explicit unique_ptr( pointer p, nullptr_t ) = delete;
 
         ~unique_ptr()
         {
@@ -144,6 +164,16 @@ namespace rtl
             pointer result = m_ptr;
             m_ptr = pointer();
             return result;
+        }
+
+        [[nodiscard]] constexpr bool operator==( nullptr_t ) const
+        {
+            return m_ptr == nullptr;
+        }
+
+        [[nodiscard]] constexpr bool operator!=( nullptr_t ) const
+        {
+            return m_ptr != nullptr;
         }
 
     private:
