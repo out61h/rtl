@@ -10,6 +10,7 @@
  */
 #pragma once
 
+#include <rtl/algorithm.hpp>
 #include <rtl/memory.hpp>
 
 namespace rtl
@@ -19,6 +20,8 @@ namespace rtl
     class basic_string_view final
     {
     public:
+        using value_type = T;
+
         static constexpr size_t npos = (size_t)-1;
 
         constexpr basic_string_view()
@@ -30,7 +33,7 @@ namespace rtl
         constexpr basic_string_view( nullptr_t ) = delete;
 
         // cppcheck-suppress noExplicitConstructor
-        constexpr basic_string_view( const T* data )
+        constexpr basic_string_view( const value_type* data )
             : m_data( data )
             , m_size( 0 )
         {
@@ -38,13 +41,13 @@ namespace rtl
                 ++m_size;
         }
 
-        constexpr basic_string_view( const T* data, size_t size )
+        constexpr basic_string_view( const value_type* data, size_t size )
             : m_data( data )
             , m_size( size )
         {
         }
 
-        [[nodiscard]] constexpr const T* data() const
+        [[nodiscard]] constexpr const value_type* data() const
         {
             return m_data;
         }
@@ -54,13 +57,18 @@ namespace rtl
             return m_size;
         }
 
+        [[nodiscard]] constexpr bool empty() const
+        {
+            return m_size == 0;
+        }
+
         [[nodiscard]] constexpr bool operator==( const basic_string_view<T>& rhs ) const
         {
             if ( size() != rhs.size() )
                 return false;
 
-            const T* l = data();
-            const T* r = rhs.data();
+            const value_type* l = data();
+            const value_type* r = rhs.data();
 
             for ( size_t i = 0; i < size(); ++i )
                 if ( *l++ != *r++ )
@@ -69,14 +77,13 @@ namespace rtl
             return true;
         }
 
-        // TODO: implement also in basic_string
         [[nodiscard]] constexpr size_t find( const basic_string_view<T>& what ) const
         {
             // TODO: use Strsafe.h routines?
-            const T* str = data();
-            const T* str_end = data() + size();
-            const T* pattern = what.data();
-            const T* pattern_end = what.data() + what.size();
+            const value_type* str = data();
+            const value_type* str_end = data() + size();
+            const value_type* pattern = what.data();
+            const value_type* pattern_end = what.data() + what.size();
 
             for ( ; str < str_end; ++str )
             {
@@ -95,8 +102,8 @@ namespace rtl
         }
 
     private:
-        const T* m_data;
-        size_t   m_size;
+        const value_type* m_data;
+        size_t            m_size;
     };
 
     // TODO: Implement SSO? (it's not code size friendly)
@@ -105,6 +112,8 @@ namespace rtl
     class basic_string final
     {
     public:
+        using value_type = T;
+
         static constexpr size_t npos = (size_t)-1;
 
         constexpr basic_string()
@@ -112,16 +121,24 @@ namespace rtl
         {
         }
 
+        constexpr basic_string( size_t size, value_type ch )
+            : m_data( new value_type[size + 1] )
+            , m_size( size + 1 )
+        {
+            rtl::fill_n( m_data.get(), m_size, ch );
+            m_data[size] = 0;
+        }
+
         constexpr basic_string( nullptr_t ) = delete;
 
         constexpr explicit basic_string( const basic_string_view<T>& view )
             // TODO: rtl::make_unique
-            : m_data( new T[view.size() + 1] )
+            : m_data( new value_type[view.size() + 1] )
             , m_size( view.size() )
         {
             // TODO: use Strsafe.h routines?
-            T*       dst = m_data.get();
-            const T* src = view.data();
+            value_type*       dst = m_data.get();
+            const value_type* src = view.data();
 
             for ( size_t i = 0; i < view.size(); ++i )
                 *dst++ = *src++;
@@ -129,12 +146,17 @@ namespace rtl
             *dst = 0;
         }
 
-        [[nodiscard]] constexpr const T* data() const
+        [[nodiscard]] constexpr const value_type* data() const
         {
             return m_data.get();
         }
 
-        [[nodiscard]] constexpr const T* c_str() const
+        [[nodiscard]] constexpr value_type* data()
+        {
+            return m_data.get();
+        }
+
+        [[nodiscard]] constexpr const value_type* c_str() const
         {
             return m_data.get();
         }
@@ -144,11 +166,17 @@ namespace rtl
             return m_size;
         }
 
+        [[nodiscard]] constexpr bool empty() const
+        {
+            return m_size == 0;
+        }
+
+        // TODO: basic_string_view::find
         [[nodiscard]] constexpr size_t rfind( const basic_string_view<T>& what ) const
         {
             // TODO: use Strsafe.h routines?
-            const T* str = data() + size() - 1;
-            const T* pattern = what.data() + what.size() - 1;
+            const value_type* str = data() + size() - 1;
+            const value_type* pattern = what.data() + what.size() - 1;
 
             for ( ; str >= data(); --str )
             {
@@ -166,24 +194,29 @@ namespace rtl
             return npos;
         }
 
+        [[nodiscard]] constexpr size_t find( const basic_string_view<T>& what ) const
+        {
+            return rtl::basic_string_view<value_type>( *this ).find( what );
+        }
+
         [[nodiscard]] constexpr basic_string substr( size_t from, size_t to = npos ) const
         {
             if ( from == npos )
-                return basic_string<T>();
+                return basic_string<value_type>();
 
-            return basic_string<T>(
+            return basic_string<value_type>(
                 basic_string_view( data() + from, rtl::min( m_size, to ) - from ) );
         }
 
         [[nodiscard]] constexpr basic_string operator+( const basic_string_view<T>& rhs ) const
         {
             // TODO: use Strsafe.h routines?
-            basic_string<T> result;
+            basic_string<value_type> result;
             result.m_size = size() + rhs.size();
-            result.m_data.reset( new T[result.m_size + 1] );
+            result.m_data.reset( new value_type[result.m_size + 1] );
 
-            const wchar_t* src = data();
-            wchar_t*       dst = result.m_data.get();
+            const value_type* src = data();
+            value_type*       dst = result.m_data.get();
 
             for ( size_t i = 0; i < size(); ++i )
                 *dst++ = *src++;
@@ -205,8 +238,8 @@ namespace rtl
             if ( size() != rhs.size() )
                 return false;
 
-            const T* l = data();
-            const T* r = rhs.data();
+            const value_type* l = data();
+            const value_type* r = rhs.data();
 
             for ( size_t i = 0; i < size(); ++i )
                 if ( *l++ != *r++ )
@@ -222,7 +255,7 @@ namespace rtl
 
         constexpr operator basic_string_view<T>() const
         {
-            return basic_string_view<T>( data(), size() );
+            return basic_string_view<value_type>( data(), size() );
         }
 
         constexpr basic_string( basic_string&& other )
@@ -244,11 +277,11 @@ namespace rtl
         }
 
         constexpr basic_string( const basic_string& other )
-            : m_data( new T[other.m_size + 1] )
+            : m_data( new value_type[other.m_size + 1] )
             , m_size( other.m_size )
         {
-            const T* src = other.data();
-            T*       dst = m_data.get();
+            const value_type* src = other.data();
+            value_type*       dst = m_data.get();
 
             for ( size_t i = 0; i < size(); ++i )
                 *dst++ = *src++;
@@ -259,11 +292,11 @@ namespace rtl
         {
             if ( this != &other )
             {
-                m_data.reset( new T[other.m_size + 1] );
+                m_data.reset( new value_type[other.m_size + 1] );
                 m_size = other.m_size;
 
-                const T* src = other.data();
-                T*       dst = m_data.get();
+                const value_type* src = other.data();
+                value_type*       dst = m_data.get();
 
                 for ( size_t i = 0; i < size(); ++i )
                     *dst++ = *src++;
@@ -273,8 +306,9 @@ namespace rtl
         }
 
     private:
-        rtl::unique_ptr<T[]> m_data;
-        size_t               m_size;
+        // TODO: use vector or buffer size overprovision with capacity?
+        rtl::unique_ptr<value_type[]> m_data;
+        size_t                        m_size;
     };
 
     using string = basic_string<char>;
