@@ -10,6 +10,10 @@
  */
 #pragma once
 
+#ifndef RTL_IMPLEMENTATION
+    #error "Do not include implementation header directly, use <rtl/sys/impl.hpp>"
+#endif
+
 #include <rtl/sys/keyboard.hpp>
 
 #include "win.hpp"
