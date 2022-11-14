@@ -4,9 +4,9 @@
  *
  * This file is part of the RTL library. Redistribution and use in source and
  * binary forms, with or without modification, are permitted exclusively
- * under the terms of the MIT license. You should have received a copy of the 
+ * under the terms of the MIT license. You should have received a copy of the
  * license with this file. If not, please visit:
- * https://github.com/out61h/rtl/blob/main/LICENSE. 
+ * https://github.com/out61h/rtl/blob/main/LICENSE.
  */
 #pragma once
 
@@ -21,7 +21,7 @@
 #if RTL_ENABLE_MEMSET
 
     #pragma function( memset )
-    
+
 extern "C" void* __cdecl memset( void* dest, int ch, size_t count );
 
 void* __cdecl memset( void* dest, int ch, size_t count )
@@ -58,12 +58,22 @@ void operator delete( void* p )
     rtl::impl::g_heap.free( p );
 }
 
+void operator delete( void* p, size_t )
+{
+    rtl::impl::g_heap.free( p );
+}
+
 [[nodiscard]] void* operator new[]( size_t count )
 {
     return rtl::impl::g_heap.calloc( count, 1 );
 }
 
 void operator delete[]( void* p ) noexcept
+{
+    rtl::impl::g_heap.free( p );
+}
+
+void operator delete[]( void* p, size_t ) noexcept
 {
     rtl::impl::g_heap.free( p );
 }
