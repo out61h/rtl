@@ -253,7 +253,7 @@ namespace rtl
             return !operator==( rhs );
         }
 
-        constexpr operator basic_string_view<T>() const
+        [[nodiscard]] constexpr operator basic_string_view<T>() const
         {
             return basic_string_view<value_type>( data(), size() );
         }
