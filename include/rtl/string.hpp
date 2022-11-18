@@ -129,6 +129,18 @@ namespace rtl
             m_data[size] = 0;
         }
 
+        constexpr basic_string( const value_type* str )
+            : basic_string()
+        {
+            const value_type* last = str;
+            for ( ; *last; )
+                ++last;
+
+            m_size = last - str + 1u;
+            m_data.reset( new value_type[m_size] );
+            rtl::copy_n( str, m_size, m_data.get() );
+        }
+
         constexpr basic_string( nullptr_t ) = delete;
 
         constexpr explicit basic_string( const basic_string_view<T>& view )
@@ -306,7 +318,7 @@ namespace rtl
         }
 
     private:
-        // TODO: use vector or buffer size overprovision with capacity?
+        // TODO: use vector or buffer with size overprovision using capacity?
         rtl::unique_ptr<value_type[]> m_data;
         size_t                        m_size;
     };
