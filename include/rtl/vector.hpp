@@ -20,15 +20,15 @@ namespace rtl
 
         constexpr vector( size_t size, element_type&& value )
             : m_size( size )
-            , m_capacity( rtl::min( size, default_capacity ) ) // TODO: do align?
+            , m_capacity( rtl::max( size, default_capacity ) ) // TODO: do align?
             , m_data( new element_type[m_capacity] )
         {
-            rtl::fill_n( m_data, value, m_size );
+            rtl::fill_n( m_data, m_size, value );
         }
 
         constexpr explicit vector( size_t size )
             : m_size( size )
-            , m_capacity( rtl::min( size, default_capacity ) ) // TODO: do align?
+            , m_capacity( rtl::max( size, default_capacity ) ) // TODO: do align?
             , m_data( new element_type[m_capacity] )
         {
             rtl::fill_n( m_data, m_size, element_type() );
@@ -95,6 +95,16 @@ namespace rtl
         [[nodiscard]] constexpr element_type* data()
         {
             return m_data;
+        }
+
+        [[nodiscard]] constexpr element_type& front()
+        {
+            return m_data[0];
+        }
+
+        [[nodiscard]] constexpr const element_type& front() const
+        {
+            return m_data[0];
         }
 
         [[nodiscard]] constexpr element_type& back()
