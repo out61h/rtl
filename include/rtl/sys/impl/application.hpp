@@ -45,8 +45,8 @@ namespace rtl
             private:
                 void destroy();
 
-                void create_resizable_components();
-                void destroy_resizable_components();
+                void create_resizable_components( bool resize );
+                void destroy_resizable_components( bool resize );
 
     #if RTL_ENABLE_APP_RESIZE
                 void set_fullscreen_mode( bool fullscreen );
@@ -203,7 +203,7 @@ namespace rtl
                     ::SetWindowLongPtrW(
                         m_window_handle, GWL_USERDATA, reinterpret_cast<LONG_PTR>( this ) );
 
-                    create_resizable_components();
+                    create_resizable_components( false );
                 }
 
                 ::ShowWindow( m_window_handle, SW_SHOW );
@@ -214,7 +214,7 @@ namespace rtl
                 on_init( m_input );
             }
 
-            void window::create_resizable_components()
+            void window::create_resizable_components( [[maybe_unused]] bool resize )
             {
                 [[maybe_unused]] BOOL result = ::GetClientRect( m_window_handle, &m_client_rect );
                 RTL_WINAPI_CHECK( result );
@@ -231,11 +231,12 @@ namespace rtl
                 init_osd_text( width, height );
         #endif
     #elif RTL_ENABLE_APP_OPENGL
-                init_opengl( width, height );
+                if ( !resize )
+                    init_opengl( width, height );
     #endif
             }
 
-            void window::destroy_resizable_components()
+            void window::destroy_resizable_components( [[maybe_unused]] bool resize )
             {
     #if RTL_ENABLE_APP_SCREEN_BUFFER
         #if RTL_ENABLE_APP_OSD
@@ -243,7 +244,8 @@ namespace rtl
         #endif
                 free_screen_buffer();
     #elif RTL_ENABLE_APP_OPENGL
-                free_opengl();
+                if ( !resize )
+                    free_opengl();
     #endif
             }
 
@@ -251,7 +253,7 @@ namespace rtl
             {
                 m_inited = false;
 
-                destroy_resizable_components();
+                destroy_resizable_components( false );
 
                 [[maybe_unused]] BOOL result = ::DestroyWindow( m_window_handle );
                 RTL_WINAPI_CHECK( result );
@@ -277,8 +279,8 @@ namespace rtl
     #if RTL_ENABLE_APP_RESIZE
                 if ( m_sized )
                 {
-                    destroy_resizable_components();
-                    create_resizable_components();
+                    destroy_resizable_components( true );
+                    create_resizable_components( true );
                     on_resize( m_input );
                     m_sized = false;
                 }
