@@ -15,7 +15,7 @@
 // IGNORE
 
 #if RTL_ENABLE_ASSERT
-    #define RTL_ASSERT( expr ) rtl::impl::assert( expr, 0, #expr, __FILE__, __LINE__ )
+    #define RTL_ASSERT( expr ) rtl::impl::assert( expr, 0u, #expr, __FILE__, __LINE__ )
 #else
     #define RTL_ASSERT( expr )
 #endif

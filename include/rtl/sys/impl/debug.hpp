@@ -20,13 +20,11 @@ namespace rtl
 {
     namespace impl
     {
-#if RTL_ENABLE_ASSERT || RTL_ENABLE_WINAPI_DIAGNOSTICS
+#if RTL_ENABLE_ASSERT || RTL_ENABLE_RUNTIME_CHECKS
         void assert( bool condition, int code, const char* message, const char* file, int line )
         {
             if ( condition )
                 return;
-
-            ::DebugBreak();
 
             DWORD_PTR args[4];
             args[0] = reinterpret_cast<DWORD_PTR>( message );
@@ -73,7 +71,8 @@ namespace rtl
         }
 #endif
 
-#if RTL_ENABLE_WINAPI_DIAGNOSTICS
+#if RTL_ENABLE_APP
+    #if RTL_ENABLE_RUNTIME_CHECKS
         namespace win
         {
             void check( bool condition, const char* file, int line )
@@ -91,6 +90,7 @@ namespace rtl
                 assert( false, (int)code, str, file, line );
             }
         } // namespace win
+    #endif
 #endif
 
     } // namespace impl
