@@ -4,9 +4,9 @@
  *
  * This file is part of the RTL library. Redistribution and use in source and
  * binary forms, with or without modification, are permitted exclusively
- * under the terms of the MIT license. You should have received a copy of the 
+ * under the terms of the MIT license. You should have received a copy of the
  * license with this file. If not, please visit:
- * https://github.com/out61h/rtl/blob/main/LICENSE. 
+ * https://github.com/out61h/rtl/blob/main/LICENSE.
  */
 #pragma once
 
@@ -154,7 +154,7 @@ namespace rtl
             return *this;
         }
 
-        size_t read_file_content( const wchar_t* name, void* p, size_t size )
+        size_t read_file_content( const wchar_t* name, void* buffer, size_t buffer_size )
         {
             HANDLE file = ::CreateFileW(
                 name, GENERIC_READ, FILE_SHARE_READ, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0 );
@@ -162,10 +162,10 @@ namespace rtl
             if ( file == INVALID_HANDLE_VALUE )
                 return 0;
 
-            const DWORD bytes_to_read = size;
+            const DWORD bytes_to_read = buffer_size;
             DWORD       bytes_read = 0;
 
-            BOOL result = ::ReadFile( file, p, bytes_to_read, &bytes_read, FALSE );
+            BOOL result = ::ReadFile( file, buffer, bytes_to_read, &bytes_read, FALSE );
             RTL_WINAPI_CHECK( result );
 
             result = ::CloseHandle( file );

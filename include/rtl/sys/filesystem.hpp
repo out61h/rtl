@@ -120,7 +120,7 @@ namespace rtl
             uint32_t        m_pad1;
         };
 
-        size_t read_file_content( const wchar_t* name, void* p, size_t size );
+        size_t read_file_content( const wchar_t* name, void* buffer, size_t buffer_size );
 
     } // namespace filesystem
 } // namespace rtl

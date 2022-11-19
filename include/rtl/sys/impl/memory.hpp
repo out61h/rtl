@@ -20,11 +20,7 @@
 
 #if RTL_ENABLE_MEMSET
 
-    #pragma function( memset )
-
-extern "C" void* __cdecl memset( void* dest, int ch, size_t count );
-
-void* __cdecl memset( void* dest, int ch, size_t count )
+extern "C" void* __cdecl memset( void* dest, int ch, size_t count )
 {
     char* dst = static_cast<char*>( dest );
 
