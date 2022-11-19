@@ -14,26 +14,31 @@ namespace rtl
 {
     namespace keyboard
     {
-        // TODO: define and handle more keys
-        enum class keys
+        namespace keys
         {
-            any,
-            enter,
-            esc,
-            space,
-            f1,
-            f2,
-            f3,
-            f4,
-            f5,
-            f6,
-            f7,
-            f8,
-            f9,
-            f10,
-            f11,
-            f12,
-            count
-        };
+            // TODO: define and handle more keys
+            enum
+            {
+                // NOTE: Virtual key codes from Win (as other platforms doesn't implemented)
+                any,
+                enter = 0x0D,
+                escape = 0x1B,
+                space = 0x20,
+                f1 = 0x70,
+                f2,
+                f3,
+                f4,
+                f5,
+                f6,
+                f7,
+                f8,
+                f9,
+                f10,
+                f11,
+                f12,
+                count = 256
+            };
+        } // namespace keys
+
     } // namespace keyboard
 } // namespace rtl

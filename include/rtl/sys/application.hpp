@@ -27,8 +27,8 @@ namespace rtl
     #if RTL_ENABLE_APP_KEYS
             struct keys
             {
-                bool state[(size_t)keyboard::keys::count];
-                bool pressed[(size_t)keyboard::keys::count];
+                bool state[keyboard::keys::count];
+                bool pressed[keyboard::keys::count];
             } keys;
     #endif
 

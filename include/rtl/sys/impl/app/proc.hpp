@@ -46,7 +46,7 @@ namespace rtl
         #if RTL_ENABLE_APP_KEYS
                 case WM_KEYDOWN:
                 {
-                    const int key = static_cast<int>( virtual_key_to_enum( wParam ) );
+                    const unsigned key = static_cast<unsigned>( wParam );
 
                     if ( !that->m_input.keys.state[key] )
                         that->m_input.keys.pressed[key] = true;
@@ -57,7 +57,7 @@ namespace rtl
 
                 case WM_KEYUP:
                 {
-                    const int key = static_cast<int>( virtual_key_to_enum( wParam ) );
+                    const unsigned key = static_cast<unsigned>( wParam );
                     that->m_input.keys.state[key] = false;
                     return 0;
                 }

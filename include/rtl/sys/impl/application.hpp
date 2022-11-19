@@ -19,7 +19,6 @@
 #include <rtl/sys/application.hpp>
 #include <rtl/sys/debug.hpp>
 
-#include "keyboard.hpp"
 #include "memory.hpp"
 #include "win.hpp"
 
@@ -289,8 +288,7 @@ namespace rtl
                 auto action = on_update( m_input, m_output );
 
     #if RTL_ENABLE_APP_KEYS
-                for ( size_t i = 0; i < static_cast<size_t>( keyboard::keys::count ); ++i )
-                    m_input.keys.pressed[i] = false;
+                rtl::fill_n( m_input.keys.pressed, keyboard::keys::count, false );
     #endif
 
                 switch ( action )
