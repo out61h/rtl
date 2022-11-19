@@ -44,6 +44,10 @@ namespace rtl
                     return 0;
 
         #if RTL_ENABLE_APP_KEYS
+                case WM_ACTIVATE:
+                    rtl::fill_n( that->m_input.keys.state, keyboard::keys::count, false );
+                    return 0;
+
                 case WM_KEYDOWN:
                 {
                     const unsigned key = static_cast<unsigned>( wParam );
@@ -66,17 +70,13 @@ namespace rtl
         #if RTL_ENABLE_APP_RESIZE
                 case WM_SIZING:
                 {
-                    if ( that )
-                        that->m_sizing = true;
-
+                    that->m_sizing = true;
                     return 0;
                 }
 
                 case WM_EXITSIZEMOVE:
                 {
-                    if ( that )
-                        that->m_sizing = false;
-
+                    that->m_sizing = false;
                     break;
                 }
 
@@ -84,11 +84,8 @@ namespace rtl
                 {
                     if ( wParam != SIZE_MINIMIZED )
                     {
-                        if ( that )
-                        {
-                            that->m_sized = that->m_inited;
-                            that->m_inited = true;
-                        }
+                        that->m_sized = that->m_inited;
+                        that->m_inited = true;
                     }
 
                     break;
