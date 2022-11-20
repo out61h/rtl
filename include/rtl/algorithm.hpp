@@ -49,8 +49,17 @@ namespace rtl
     template<typename InputIterator, typename Size, typename OutputIterator>
     constexpr OutputIterator copy_n( InputIterator src, Size count, OutputIterator dst )
     {
-        for ( auto last = dst + count; dst != last; )
+        for ( Size i = 0; i < count; ++i )
             *dst++ = *src++;
+
+        return dst;
+    }
+
+    template<typename InputIterator, typename Size, typename OutputIterator>
+    constexpr OutputIterator move_n( InputIterator src, Size count, OutputIterator dst )
+    {
+        for ( Size i = 0; i < count; ++i )
+            *dst++ = rtl::move( *src++ );
 
         return dst;
     }
@@ -58,8 +67,8 @@ namespace rtl
     template<typename Iterator, typename Size, typename Value>
     constexpr Iterator fill_n( Iterator first, Size count, const Value& value )
     {
-        for ( auto last = first + count; first != last; ++first )
-            *first = value;
+        for ( Size i = 0; i < count; ++i )
+            *first++ = value;
 
         return first;
     }
