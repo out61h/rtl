@@ -10,6 +10,8 @@
  */
 #pragma once
 
+#include <rtl/int.hpp>
+
 namespace rtl
 {
     template<typename T>
@@ -48,5 +50,21 @@ namespace rtl
         }
 
         static constexpr bool is_signed = false;
+    };
+
+    template<>
+    struct numeric_limits<int16_t>
+    {
+        static constexpr int16_t min()
+        {
+            return -32768;
+        }
+
+        static constexpr int16_t max()
+        {
+            return 32767;
+        }
+
+        static constexpr bool is_signed = true;
     };
 } // namespace rtl
