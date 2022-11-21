@@ -15,9 +15,11 @@
 #endif
 
 #include <rtl/algorithm.hpp>
+#include <rtl/limits.hpp>
 #include <rtl/memory.hpp>
 #include <rtl/sys/application.hpp>
 #include <rtl/sys/debug.hpp>
+#include <rtl/vector.hpp>
 
 #include "memory.hpp"
 #include "win.hpp"
@@ -33,7 +35,9 @@ namespace rtl
             class window final
             {
             public:
-                void create( const wchar_t* app_name, application::reset_function* on_init );
+                void create( const wchar_t*               app_name,
+                             const application::params&   app_params,
+                             application::reset_function* on_init );
                 void update( application::reset_function*  on_resize,
                              application::update_function* on_update );
 
@@ -42,6 +46,8 @@ namespace rtl
                 bool fullscreen() const;
 
             private:
+                SIZE initial_size( const application::params& app_params ) const;
+
                 void destroy();
 
                 void create_resizable_components( bool resize );
@@ -97,9 +103,44 @@ namespace rtl
                 bool m_sizing{ false };
                 bool m_sized{ false };
                 bool m_fullscreen{ false };
-                bool m_inited{ false };
+                bool m_resize_pad{ false };
 
                 WINDOWPLACEMENT m_placement{ 0 };
+    #endif
+                bool m_inited{ false };
+                bool m_inited_pad[3]{ false };
+
+    #if RTL_ENABLE_APP_AUDIO
+                // TODO: move definition away
+                class audio final
+                {
+                public:
+                    audio( unsigned samples_per_second,
+                           unsigned samples_per_frame,
+                           unsigned frames_per_buffer );
+                    ~audio();
+
+                    [[nodiscard]] int16_t* start();
+                    [[nodiscard]] int16_t* commit();
+
+                    void stop();
+
+                private:
+                    static void CALLBACK
+                        wave_out_proc( HWAVEOUT, UINT, DWORD_PTR, DWORD_PTR, DWORD_PTR );
+
+                    WAVEFORMATEX         m_wave_format{ 0 };
+                    bool                 m_started{ false };
+                    bool                 m_pad{ false };
+                    HWAVEOUT             m_wave_out{ nullptr };
+                    rtl::vector<WAVEHDR> m_wave_headers;
+                    rtl::vector<int16_t> m_buffer;
+                    size_t               m_write_index{ 0 };
+                };
+
+                // NOTE: can't use \unique_ptr here because the \window class must have the trivial
+                // constructor
+                audio* m_audio{ nullptr };
     #endif
 
     #if RTL_ENABLE_APP_SCREEN_BUFFER
@@ -132,6 +173,25 @@ namespace rtl
                 return m_client_rect.bottom - m_client_rect.top;
             }
 
+            SIZE window::initial_size(
+                [[maybe_unused]] const application::params& app_params ) const
+            {
+    #if !RTL_ENABLE_APP_RESIZE && RTL_ENABLE_APP_FULLSCREEN
+                RECT window_rect;
+
+                [[maybe_unused]] BOOL result
+                    = ::GetWindowRect( ::GetDesktopWindow(), &window_rect );
+                RTL_WINAPI_CHECK( result );
+
+                return { window_rect.right - window_rect.left,
+                         window_rect.bottom - window_rect.top };
+    #else
+
+                return { app_params.window.width ? app_params.window.width : CW_USEDEFAULT,
+                         app_params.window.height ? app_params.window.height : CW_USEDEFAULT };
+    #endif
+            }
+
             bool window::fullscreen() const
             {
     #if RTL_ENABLE_APP_RESIZE
@@ -141,7 +201,9 @@ namespace rtl
     #endif
             }
 
-            void window::create( const wchar_t* app_name, application::reset_function* on_init )
+            void window::create( const wchar_t*               app_name,
+                                 const application::params&   app_params,
+                                 application::reset_function* on_init )
             {
                 m_window_class.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
                 m_window_class.lpfnWndProc = wnd_proc;
@@ -162,32 +224,23 @@ namespace rtl
                 [[maybe_unused]] ATOM atom = ::RegisterClassW( &m_window_class );
                 RTL_WINAPI_CHECK( atom != 0 );
 
-                BOOL result;
-                RECT window_rect;
+                const SIZE size = initial_size( app_params );
 
-                if constexpr ( is_fullscreen )
-                {
-                    result = ::GetWindowRect( ::GetDesktopWindow(), &window_rect );
-                    RTL_WINAPI_CHECK( result );
-                }
-
-                m_window_handle = ::CreateWindowExW(
-                    WS_EX_APPWINDOW,
-                    m_window_class.lpszClassName,
-                    app_name,
-                    is_fullscreen && !is_resizable ? fullscreen_style
-                    : is_resizable                 ? resizable_style
-                                                   : fixed_style,
-                    CW_USEDEFAULT,
-                    CW_USEDEFAULT,
-                    is_fullscreen && !is_resizable ? window_rect.right - window_rect.left
-                                                   : CW_USEDEFAULT,
-                    is_fullscreen && !is_resizable ? window_rect.bottom - window_rect.top
-                                                   : CW_USEDEFAULT,
-                    nullptr,
-                    nullptr,
-                    m_window_class.hInstance,
-                    nullptr ); // TODO: this?
+                m_window_handle
+                    = ::CreateWindowExW( WS_EX_APPWINDOW,
+                                         m_window_class.lpszClassName,
+                                         app_name,
+                                         is_fullscreen && !is_resizable ? fullscreen_style
+                                         : is_resizable                 ? resizable_style
+                                                                        : fixed_style,
+                                         CW_USEDEFAULT,
+                                         CW_USEDEFAULT,
+                                         size.cx,
+                                         size.cy,
+                                         nullptr,
+                                         nullptr,
+                                         m_window_class.hInstance,
+                                         this );
                 RTL_WINAPI_CHECK( m_window_handle != nullptr );
 
     #if RTL_ENABLE_APP_RESIZE
@@ -195,15 +248,37 @@ namespace rtl
 
                 if constexpr ( is_fullscreen )
                     set_fullscreen_mode( true );
+    #else
+                m_inited = true;
     #endif
-                {
-                    // TODO: move to WM_CREATE?
-                    static_assert( sizeof( this ) == sizeof( LONG_PTR ) );
-                    ::SetWindowLongPtrW(
-                        m_window_handle, GWL_USERDATA, reinterpret_cast<LONG_PTR>( this ) );
 
-                    create_resizable_components( false );
+                create_resizable_components( false );
+
+                BOOL result;
+
+    #if RTL_ENABLE_APP_AUDIO
+                {
+                    DEVMODEA mode;
+                    result = ::EnumDisplaySettingsA( nullptr, ENUM_CURRENT_SETTINGS, &mode );
+                    RTL_WINAPI_CHECK( result );
+                    RTL_ASSERT( mode.dmDisplayFrequency > 1 );
+                    RTL_ASSERT( app_params.audio.samples_per_second > 0 );
+                    RTL_ASSERT( app_params.audio.max_latency_samples > 0 );
+
+                    m_input.audio.samples_per_second = app_params.audio.samples_per_second;
+                    m_input.audio.samples_per_frame
+                        = app_params.audio.samples_per_second / mode.dmDisplayFrequency;
+
+                    const size_t buffers_count
+                        = app_params.audio.max_latency_samples / m_input.audio.samples_per_frame;
+
+                    m_audio = new audio( m_input.audio.samples_per_second,
+                                         m_input.audio.samples_per_frame,
+                                         buffers_count > 1 ? buffers_count : 2 );
+
+                    m_output.audio.frame = m_audio->start();
                 }
+    #endif
 
                 ::ShowWindow( m_window_handle, SW_SHOW );
 
@@ -254,8 +329,9 @@ namespace rtl
 
                 destroy_resizable_components( false );
 
-                [[maybe_unused]] BOOL result = ::DestroyWindow( m_window_handle );
-                RTL_WINAPI_CHECK( result );
+    #if RTL_ENABLE_APP_AUDIO
+                delete m_audio;
+    #endif
 
                 // NOTE: Non-critical for the application beying terminated
                 // ::UnregisterClassW( m_window_class.lpszClassName, m_window_class.hInstance );
@@ -278,6 +354,9 @@ namespace rtl
     #if RTL_ENABLE_APP_RESIZE
                 if ( m_sized )
                 {
+        #if RTL_ENABLE_APP_AUDIO
+                    m_output.audio.frame = m_audio->start();
+        #endif
                     destroy_resizable_components( true );
                     create_resizable_components( true );
                     on_resize( m_input );
@@ -288,7 +367,7 @@ namespace rtl
                 auto action = on_update( m_input, m_output );
 
     #if RTL_ENABLE_APP_KEYS
-                rtl::fill_n( m_input.keys.pressed, keyboard::keys::count, false );
+                rtl::fill_n( m_input.keys.pressed, (size_t)keyboard::keys::count, false );
     #endif
 
                 switch ( action )
@@ -310,6 +389,10 @@ namespace rtl
     #elif RTL_ENABLE_APP_OPENGL
                     commit_opengl();
     #endif
+
+    #if RTL_ENABLE_APP_AUDIO
+                    m_output.audio.frame = m_audio->commit();
+    #endif
                     break;
                 }
             }
@@ -321,6 +404,7 @@ namespace rtl
     } // namespace impl
 
     void application::run( const wchar_t*   app_name,
+                           const params&    app_params,
                            reset_function*  on_reset,
                            update_function* on_update )
     {
@@ -331,10 +415,12 @@ namespace rtl
         if ( mutex )
         {
             HWND wnd = ::FindWindowW( app_name, nullptr );
-            RTL_WINAPI_CHECK( wnd != nullptr );
+            if ( wnd != nullptr )
+            {
+                ::ShowWindow( wnd, SW_SHOWNOACTIVATE );
+                ::SetForegroundWindow( wnd );
+            }
 
-            ::ShowWindow( wnd, SW_SHOWNOACTIVATE );
-            ::SetForegroundWindow( wnd );
             return;
         }
 
@@ -342,17 +428,10 @@ namespace rtl
         RTL_WINAPI_CHECK( mutex != nullptr );
     #endif
 
-        impl::win::g_window.create( app_name, on_reset );
+        impl::win::g_window.create( app_name, app_params, on_reset );
 
         MSG msg{ 0 };
 
-    #if 0
-        for ( BOOL ret; ( ret = ::GetMessageW( &msg, nullptr, 0, 0 ) ) != 0; )
-        {
-            ::TranslateMessage( &msg );
-            ::DispatchMessageW( &msg ); // TODO: result => exit or load next
-        }
-    #else
         for ( ; msg.message != WM_QUIT; )
         {
             while ( ::PeekMessageW( &msg, nullptr, 0, 0, PM_REMOVE ) )
@@ -369,7 +448,6 @@ namespace rtl
             // TODO: return time for next start or -1 for infinite wait
             impl::win::g_window.update( on_reset, on_update );
         }
-    #endif
     }
 
     application& application::instance()

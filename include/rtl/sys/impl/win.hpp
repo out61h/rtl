@@ -60,6 +60,10 @@
     #define RTL_WINAPI_CHECK( condition )
 #endif
 
+#if RTL_ENABLE_APP_AUDIO
+    #include <mmsystem.h>
+#endif
+
 namespace rtl
 {
     namespace impl

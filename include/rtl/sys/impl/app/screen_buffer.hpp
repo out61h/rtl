@@ -89,7 +89,7 @@ namespace rtl
                                                          SRCCOPY );
                 RTL_WINAPI_CHECK( result );
 
-                // TODO: This call brokes font rendering, deal with it later
+                // TODO: This call brokes font rendering; deal with it later
                 // object = ::SelectObject( that->m_screen_buffer_dc, object );
                 // RTL_ASSERT( object == that->m_bitmap_handle );
             }

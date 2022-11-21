@@ -20,9 +20,30 @@ namespace rtl
     class application final
     {
     public:
+        struct params
+        {
+            void* void_param; // CAUTION: it is better to NOT touch the V̪̪̟O͇̘̞I̝̞D͇͚͜!!!
+
+    #if RTL_ENABLE_APP_AUDIO
+            struct audio
+            {
+                size_t samples_per_second;
+                size_t max_latency_samples;
+            } audio;
+    #endif
+
+    #if RTL_ENABLE_APP_RESIZE || !RTL_ENABLE_APP_FULLSCREEN
+            struct window
+            {
+                int width;
+                int height;
+            } window;
+    #endif
+        };
+
         struct input
         {
-            void* void_source; // CAUTION: it is better to NOT touch it!!!
+            void* void_source; // CAUTION: it is better to NOT touch the V̪̪̟O͇̘̞I̝̞D͇͚͜!!!
 
     #if RTL_ENABLE_APP_KEYS
             struct keys
@@ -43,6 +64,14 @@ namespace rtl
             } clock;
     #endif
 
+    #if RTL_ENABLE_APP_AUDIO
+            struct audio
+            {
+                size_t samples_per_second;
+                size_t samples_per_frame;
+            } audio;
+    #endif
+
             struct screen
             {
                 int width;
@@ -57,7 +86,7 @@ namespace rtl
 
         struct output
         {
-            void* void_sink; // CAUTION: it is better to NOT touch it!!!
+            void* void_sink; // CAUTION: it is better to NOT touch the V̪̪̟O͇̘̞I̝̞D͇͚͜!!!
 
     #if RTL_ENABLE_APP_SCREEN_BUFFER
         #if RTL_ENABLE_APP_OSD
@@ -80,6 +109,15 @@ namespace rtl
             } osd;
         #endif
     #endif
+
+    #if RTL_ENABLE_APP_AUDIO
+            struct audio
+            {
+                static constexpr size_t channel_count = 2;
+
+                int16_t* frame;
+            } audio;
+    #endif
         };
 
         enum class action
@@ -91,14 +129,16 @@ namespace rtl
     #endif
         };
 
-        using update_function = action( const input&, output& );
         using reset_function = void( const input& );
+        using update_function = action( const input&, output& );
 
     public:
         static application& instance();
 
-        // TODO: add the ability to specify initial window size (usefully for emulators)
-        void run( const wchar_t* app_name, reset_function* on_reset, update_function* on_update );
+        void run( const wchar_t*   app_name,
+                  const params&    app_params,
+                  reset_function*  on_reset,
+                  update_function* on_update );
 
     private:
         application() = default;

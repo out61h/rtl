@@ -17,7 +17,6 @@
 #include <rtl/sys/impl/application.hpp>
 
 #if RTL_ENABLE_APP
-    #if RTL_ENABLE_APP_RESIZE
 
 namespace rtl
 {
@@ -32,6 +31,15 @@ namespace rtl
 
                 switch ( uMsg )
                 {
+                case WM_CREATE:
+                {
+                    CREATESTRUCT* cs = reinterpret_cast<CREATESTRUCT*>( lParam );
+                    ::SetWindowLongPtrW(
+                        hWnd, GWL_USERDATA, reinterpret_cast<LONG_PTR>( cs->lpCreateParams ) );
+
+                    return 0;
+                }
+
                 case WM_CLOSE:
                 {
                     [[maybe_unused]] BOOL result = ::DestroyWindow( that->m_window_handle );
@@ -43,9 +51,9 @@ namespace rtl
                     ::PostQuitMessage( 0 );
                     return 0;
 
-        #if RTL_ENABLE_APP_KEYS
+    #if RTL_ENABLE_APP_KEYS
                 case WM_ACTIVATE:
-                    rtl::fill_n( that->m_input.keys.state, keyboard::keys::count, false );
+                    rtl::fill_n( that->m_input.keys.state, (size_t)keyboard::keys::count, false );
                     return 0;
 
                 case WM_KEYDOWN:
@@ -65,19 +73,28 @@ namespace rtl
                     that->m_input.keys.state[key] = false;
                     return 0;
                 }
-        #endif
+    #endif
 
-        #if RTL_ENABLE_APP_RESIZE
+    #if RTL_ENABLE_APP_RESIZE
                 case WM_SIZING:
                 {
                     that->m_sizing = true;
                     return 0;
                 }
 
+        #if RTL_ENABLE_APP_AUDIO
+
+                case WM_ENTERSIZEMOVE:
+                {
+                    that->m_audio->stop();
+                    return 0;
+                }
+        #endif
+
                 case WM_EXITSIZEMOVE:
                 {
                     that->m_sizing = false;
-                    break;
+                    return 0;
                 }
 
                 case WM_SIZE:
@@ -88,47 +105,43 @@ namespace rtl
                         that->m_inited = true;
                     }
 
-                    break;
+                    return 0;
                 }
 
                 case WM_GETMINMAXINFO:
                 {
-                    if ( that )
-                    {
-                        MINMAXINFO* minmax = reinterpret_cast<MINMAXINFO*>( lParam );
-                        minmax->ptMinTrackSize.x = minimal_width;
-                        minmax->ptMinTrackSize.y = minimal_height;
-                    }
+                    MINMAXINFO* minmax = reinterpret_cast<MINMAXINFO*>( lParam );
+                    minmax->ptMinTrackSize.x = minimal_width;
+                    minmax->ptMinTrackSize.y = minimal_height;
 
-                    break;
+                    return 0;
                 }
+    #endif
 
-        #endif
-
-        #if RTL_ENABLE_APP_SCREEN_BUFFER
+    #if RTL_ENABLE_APP_SCREEN_BUFFER
                 case WM_PAINT:
                 {
-            #if RTL_ENABLE_APP_RESIZE
+        #if RTL_ENABLE_APP_RESIZE
                     if ( that->m_sizing )
                         break;
-            #endif
+        #endif
                     PAINTSTRUCT ps;
 
                     HDC hdc = ::BeginPaint( hWnd, &ps );
                     RTL_WINAPI_CHECK( hdc != nullptr );
 
-            #if RTL_ENABLE_APP_SCREEN_BUFFER
-                #if RTL_ENABLE_APP_OSD
+        #if RTL_ENABLE_APP_SCREEN_BUFFER
+            #if RTL_ENABLE_APP_OSD
                     that->draw_osd_text( hdc );
-                #endif
-                    that->draw_screen_buffer( hdc );
             #endif
+                    that->draw_screen_buffer( hdc );
+        #endif
 
                     [[maybe_unused]] BOOL result = ::EndPaint( hWnd, &ps );
                     RTL_WINAPI_CHECK( result );
                     return 0;
                 }
-        #endif
+    #endif
 
                 case WM_SETCURSOR:
                     if constexpr ( !has_cursor || is_resizable )
@@ -153,5 +166,4 @@ namespace rtl
     } // namespace impl
 } // namespace rtl
 
-    #endif
 #endif

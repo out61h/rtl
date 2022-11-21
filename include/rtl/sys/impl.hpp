@@ -19,6 +19,7 @@
 #include "impl/printf.hpp"
 #include "impl/startup.hpp"
 
+#include "impl/app/audio.hpp"
 #include "impl/app/opengl.hpp"
 #include "impl/app/osd.hpp"
 #include "impl/app/proc.hpp"
