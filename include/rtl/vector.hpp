@@ -40,6 +40,7 @@ namespace rtl
         }
 
         constexpr vector( const vector& that )
+            : vector()
         {
             *this = that;
         }
@@ -65,6 +66,7 @@ namespace rtl
         }
 
         constexpr vector( vector&& that )
+            : vector()
         {
             *this = rtl::move( that );
         }
@@ -174,7 +176,7 @@ namespace rtl
 
                 element_type* new_data = new element_type[m_capacity];
 
-                rtl::copy_n( m_data, m_size, new_data );
+                rtl::move_n( m_data, m_size, new_data );
                 delete[] m_data;
 
                 m_data = new_data;
@@ -193,14 +195,14 @@ namespace rtl
 
                     element_type* extended = new element_type[size];
 
-                    rtl::copy_n( m_data, m_size, extended );
+                    rtl::move_n( m_data, m_size, extended );
                     delete[] m_data;
 
                     m_data = extended;
                 }
 
                 if ( size > m_size )
-                    rtl::fill_n( m_data + m_size, element_type(), size - m_size );
+                    rtl::fill_n( m_data + m_size, size - m_size, element_type() );
 
                 m_size = size;
             }
@@ -214,7 +216,7 @@ namespace rtl
 
                 element_type* extended = new element_type[capacity];
 
-                rtl::copy_n( m_data, m_size, extended );
+                rtl::move_n( m_data, m_size, extended );
                 delete[] m_data;
 
                 m_data = extended;
@@ -224,8 +226,8 @@ namespace rtl
     private:
         static constexpr size_t default_capacity = 8;
 
-        size_t        m_size;
-        size_t        m_capacity;
-        element_type* m_data;
+        size_t        m_size{ 0 };
+        size_t        m_capacity{ 0 };
+        element_type* m_data{ nullptr };
     };
 } // namespace rtl
