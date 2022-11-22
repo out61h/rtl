@@ -1,6 +1,6 @@
 cmake_minimum_required( VERSION 3.11 )
 
-project( rtl VERSION 0.1.0 LANGUAGES C CXX )
+project( rtl VERSION 0.2.0 LANGUAGES C CXX )
 
 set( RTL_TARGET_NAME ${PROJECT_NAME} )
 set( RTL_TARGETS_EXPORT_NAME "${PROJECT_NAME}Targets" )

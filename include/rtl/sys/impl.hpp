@@ -26,4 +26,11 @@
 #include "impl/app/resize.hpp"
 #include "impl/app/screen_buffer.hpp"
 
+#include "impl/opencl/buffer.hpp"
+#include "impl/opencl/context.hpp"
+#include "impl/opencl/device.hpp"
+#include "impl/opencl/kernel.hpp"
+#include "impl/opencl/platform.hpp"
+#include "impl/opencl/program.hpp"
+
 #undef RTL_IMPLEMENTATION
