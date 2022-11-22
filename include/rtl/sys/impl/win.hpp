@@ -61,6 +61,16 @@
 #endif
 
 #if RTL_ENABLE_APP_AUDIO
+    #define MMNODRV
+    #define MMNOSOUND
+    #define MMNOMIDI
+    #define MMNOAUX
+    #define MMNOMIXER
+    #define MMNOTIMER
+    #define MMNOJOY
+    #define MMNOMCI
+    #define MMNOMMIO
+    #define MMNOMMSYSTEM
     #include <mmsystem.h>
 #endif
 

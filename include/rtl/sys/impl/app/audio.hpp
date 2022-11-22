@@ -16,8 +16,6 @@
 
 #include <rtl/sys/impl/application.hpp>
 
-#include <mmsystem.h>
-
 #if RTL_ENABLE_APP
     #if RTL_ENABLE_APP_AUDIO
         // TODO: "Retry, ignore, abort" loop
