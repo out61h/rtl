@@ -54,7 +54,7 @@ namespace rtl
                 RTL_ASSERT( samples_per_frame > 0 );
                 RTL_ASSERT( frames_per_buffer > 1 );
 
-                constexpr size_t channels_count = application::output::audio::channel_count;
+                constexpr size_t channels_count = application::input::audio::channel_count;
 
                 m_wave_format.wFormatTag = WAVE_FORMAT_PCM;
                 m_wave_format.nChannels = channels_count;
@@ -175,7 +175,7 @@ namespace rtl
                 }
                 else
                 {
-                    // TODO: timeout?
+                    // TODO: timeout with frame duration and detect buffer overrun after that?
                     for ( ;; )
                     {
                         // TODO: really need this?

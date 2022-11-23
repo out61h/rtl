@@ -67,8 +67,12 @@ namespace rtl
     #if RTL_ENABLE_APP_AUDIO
             struct audio
             {
+                static constexpr size_t channel_count = 2;
+
                 size_t samples_per_second;
                 size_t samples_per_frame;
+
+                int16_t* frame;
             } audio;
     #endif
 
@@ -108,15 +112,6 @@ namespace rtl
                 wchar_t text[(size_t)location::count][text_length];
             } osd;
         #endif
-    #endif
-
-    #if RTL_ENABLE_APP_AUDIO
-            struct audio
-            {
-                static constexpr size_t channel_count = 2;
-
-                int16_t* frame;
-            } audio;
     #endif
         };
 

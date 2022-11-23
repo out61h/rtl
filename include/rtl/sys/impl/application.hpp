@@ -276,7 +276,7 @@ namespace rtl
                                          m_input.audio.samples_per_frame,
                                          buffers_count > 1 ? buffers_count : 2 );
 
-                    m_output.audio.frame = m_audio->start();
+                    m_input.audio.frame = m_audio->start();
                 }
     #endif
 
@@ -355,7 +355,7 @@ namespace rtl
                 if ( m_sized )
                 {
         #if RTL_ENABLE_APP_AUDIO
-                    m_output.audio.frame = m_audio->start();
+                    m_input.audio.frame = m_audio->start();
         #endif
                     destroy_resizable_components( true );
                     create_resizable_components( true );
@@ -391,7 +391,7 @@ namespace rtl
     #endif
 
     #if RTL_ENABLE_APP_AUDIO
-                    m_output.audio.frame = m_audio->commit();
+                    m_input.audio.frame = m_audio->commit();
     #endif
                     break;
                 }
