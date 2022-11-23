@@ -51,6 +51,13 @@ namespace rtl
                     ::PostQuitMessage( 0 );
                     return 0;
 
+                case WM_SYSCOMMAND:
+                    // Disable window menu call by F10 key
+                    if ( ( wParam & 0xfff0 ) == SC_KEYMENU )
+                        return 0;
+
+                    break;
+
     #if RTL_ENABLE_APP_KEYS
                 case WM_ACTIVATE:
                     rtl::fill_n( that->m_input.keys.state, (size_t)keyboard::keys::count, false );
