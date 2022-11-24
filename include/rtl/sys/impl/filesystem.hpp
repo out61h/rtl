@@ -173,5 +173,164 @@ namespace rtl
 
             return bytes_read;
         }
+
+        file::file()
+            : m_handle( INVALID_HANDLE_VALUE )
+        {
+        }
+
+        file file::open( const wchar_t* name, access acc, mode md )
+        {
+            DWORD cf_access{ 0 };
+
+            switch ( acc )
+            {
+            case access::read_only:
+                cf_access = GENERIC_READ;
+                break;
+
+            case access::write_only:
+                cf_access = GENERIC_WRITE;
+                break;
+
+            case access::read_write:
+                cf_access = GENERIC_READ | GENERIC_WRITE;
+                break;
+            }
+
+            DWORD cf_mode{ 0 };
+
+            switch ( md )
+            {
+            case mode::create_always:
+                cf_mode = CREATE_ALWAYS;
+                break;
+
+            case mode::create_new:
+                cf_mode = CREATE_NEW;
+                break;
+
+            case mode::open_always:
+                cf_mode = OPEN_ALWAYS;
+                break;
+
+            case mode::open_existing:
+                cf_mode = OPEN_EXISTING;
+                break;
+
+            case mode::truncate_existing:
+                cf_mode = TRUNCATE_EXISTING;
+                break;
+            }
+
+            HANDLE handle = ::CreateFileW(
+                name, cf_access, FILE_SHARE_READ, nullptr, cf_mode, FILE_ATTRIBUTE_NORMAL, 0 );
+
+            return file( handle );
+        }
+
+        file::~file()
+        {
+            close();
+        }
+
+        file::file( file&& other )
+            : file()
+        {
+            *this = rtl::move( other );
+        }
+
+        file& file::operator=( file&& other )
+        {
+            if ( this != &other )
+            {
+                close();
+                rtl::swap( m_handle, other.m_handle );
+            }
+
+            return *this;
+        }
+
+        void file::close()
+        {
+            if ( m_handle != INVALID_HANDLE_VALUE )
+            {
+                [[maybe_unused]] BOOL result = ::CloseHandle( m_handle );
+                RTL_WINAPI_CHECK( result );
+
+                m_handle = INVALID_HANDLE_VALUE;
+            }
+        }
+
+        file::operator bool() const
+        {
+            return m_handle != INVALID_HANDLE_VALUE;
+        }
+
+        intmax_t file::tell()
+        {
+            LARGE_INTEGER position{ 0 };
+
+            [[maybe_unused]] BOOL result
+                = ::SetFilePointerEx( m_handle, { 0 }, &position, FILE_CURRENT );
+            RTL_WINAPI_CHECK( result );
+
+            return position.QuadPart;
+        }
+
+        void file::seek( intmax_t offs, position pos )
+        {
+            LARGE_INTEGER offset;
+            offset.QuadPart = offs;
+
+            DWORD method{ 0 };
+
+            switch ( pos )
+            {
+            case position::current:
+                method = FILE_CURRENT;
+                break;
+
+            case position::begin:
+                method = FILE_BEGIN;
+                break;
+
+            case position::end:
+                method = FILE_END;
+                break;
+            }
+
+            [[maybe_unused]] BOOL result = ::SetFilePointerEx( m_handle, offset, nullptr, method );
+            RTL_WINAPI_CHECK( result );
+        }
+
+        unsigned file::read( void* buffer, unsigned size )
+        {
+            const DWORD bytes_to_read = size;
+            DWORD       bytes_read;
+
+            [[maybe_unused]] BOOL result
+                = ::ReadFile( m_handle, buffer, bytes_to_read, &bytes_read, nullptr );
+            RTL_WINAPI_CHECK( result );
+
+            return bytes_read;
+        }
+
+        unsigned file::write( const void* buffer, unsigned size )
+        {
+            const DWORD bytes_to_write = size;
+            DWORD       bytes_written;
+
+            [[maybe_unused]] BOOL result
+                = ::WriteFile( m_handle, buffer, bytes_to_write, &bytes_written, nullptr );
+            RTL_WINAPI_CHECK( result );
+
+            return bytes_written;
+        }
+
+        file::file( void* handle )
+            : m_handle( handle )
+        {
+        }
     } // namespace filesystem
 } // namespace rtl

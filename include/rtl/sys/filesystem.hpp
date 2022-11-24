@@ -12,6 +12,7 @@
 
 #include <rtl/algorithm.hpp>
 #include <rtl/int.hpp>
+#include <rtl/limits.hpp>
 #include <rtl/string.hpp>
 
 namespace rtl
@@ -120,7 +121,59 @@ namespace rtl
             uint32_t        m_pad1;
         };
 
-        size_t read_file_content( const wchar_t* name, void* buffer, size_t buffer_size );
+        class file final
+        {
+        public:
+            enum class access
+            {
+                read_only,
+                write_only,
+                read_write
+            };
 
+            enum class mode
+            {
+                create_always,
+                create_new,
+                open_always,
+                open_existing,
+                truncate_existing
+            };
+
+            enum class position
+            {
+                begin,
+                current,
+                end
+            };
+
+            // TODO: const wchar_t* -> path
+            static file open( const wchar_t* name, access a, mode m );
+            file();
+            ~file();
+
+            file( file&& other );
+            file& operator=( file&& other );
+
+            operator bool() const;
+
+            intmax_t tell();
+            void     seek( intmax_t offset, position p );
+
+            unsigned read( void* buffer, unsigned size_in_bytes );
+            unsigned write( const void* buffer, unsigned size_in_bytes );
+
+            void close();
+
+        private:
+            explicit file( void* handle );
+
+            file( const file& ) = delete;
+            file& operator=( const file& ) = delete;
+
+            void* m_handle;
+        };
+
+        size_t read_file_content( const wchar_t* name, void* buffer, size_t buffer_size );
     } // namespace filesystem
 } // namespace rtl
