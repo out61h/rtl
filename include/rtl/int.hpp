@@ -13,6 +13,7 @@
 namespace rtl
 {
     static_assert( sizeof( int ) == 4 );
+    static_assert( sizeof( long long ) == 8 );
 
     typedef long long          intmax_t;
     typedef unsigned long long uintmax_t;
