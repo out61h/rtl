@@ -126,14 +126,16 @@ namespace rtl
 
         using reset_function = void( const input& );
         using update_function = action( const input&, output& );
+        using terminate_function = void();
 
     public:
         static application& instance();
 
-        void run( const wchar_t*   app_name,
-                  const params&    app_params,
-                  reset_function*  on_reset,
-                  update_function* on_update );
+        void run( const wchar_t*      app_name,
+                  const params&       app_params,
+                  reset_function*     on_reset,
+                  update_function*    on_update,
+                  terminate_function* on_terminate );
 
     private:
         application() = default;

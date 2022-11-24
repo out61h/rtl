@@ -285,7 +285,8 @@ namespace rtl
                 result = ::UpdateWindow( m_window_handle );
                 RTL_WINAPI_CHECK( result );
 
-                on_init( m_input );
+                if ( on_init )
+                    on_init( m_input );
             }
 
             void window::create_resizable_components( [[maybe_unused]] bool resize )
@@ -359,12 +360,16 @@ namespace rtl
         #endif
                     destroy_resizable_components( true );
                     create_resizable_components( true );
-                    on_resize( m_input );
+
+                    if ( on_resize )
+                        on_resize( m_input );
+
                     m_sized = false;
                 }
     #endif
 
-                auto action = on_update( m_input, m_output );
+                const auto action
+                    = on_update ? on_update( m_input, m_output ) : application::action::none;
 
     #if RTL_ENABLE_APP_KEYS
                 rtl::fill_n( m_input.keys.pressed, (size_t)keyboard::keys::count, false );
@@ -403,10 +408,11 @@ namespace rtl
 
     } // namespace impl
 
-    void application::run( const wchar_t*   app_name,
-                           const params&    app_params,
-                           reset_function*  on_reset,
-                           update_function* on_update )
+    void application::run( const wchar_t*      app_name,
+                           const params&       app_params,
+                           reset_function*     on_reset,
+                           update_function*    on_update,
+                           terminate_function* on_terminate )
     {
     #if RTL_ENABLE_APP_SINGLETON
         rtl::unique_ptr<void, decltype( &::CloseHandle )> mutex(
@@ -448,6 +454,9 @@ namespace rtl
             // TODO: return time for next start or -1 for infinite wait
             impl::win::g_window.update( on_reset, on_update );
         }
+
+        if ( on_terminate )
+            on_terminate();
     }
 
     application& application::instance()
