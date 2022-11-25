@@ -16,8 +16,11 @@
 
 #if RTL_ENABLE_OPENCL
 
+    #include <rtl/sys/debug.hpp>
     #include <rtl/sys/impl/opencl.hpp>
     #include <rtl/sys/opencl.hpp>
+
+    #include <gl/GL.h>
 
 namespace rtl
 {
