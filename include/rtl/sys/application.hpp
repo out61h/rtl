@@ -17,9 +17,14 @@
 
 namespace rtl
 {
+    // TODO: Remove padding placeholders of void* type
     class application final
     {
     public:
+    #if RTL_ENABLE_APP_RESOURCES
+        class resource;
+    #endif
+
         struct params
         {
             void* void_param; // CAUTION: it is better to NOT touch the V̪̪̟O͇̘̞I̝̞D͇͚͜!!!
@@ -62,6 +67,17 @@ namespace rtl
                 // monotone counter of thirds (1/60 of second)
                 int32_t thirds;
             } clock;
+    #endif
+
+    #if RTL_ENABLE_APP_RESOURCES
+            struct resources
+            {
+                void* void_resource; // CAUTION: it is better to NOT touch the V̪̪̟O͇̘̞I̝̞D͇͚͜!!!
+
+                resource open( int type, int id ) const;
+
+                // TODO: resource iterator
+            } resources;
     #endif
 
     #if RTL_ENABLE_APP_AUDIO
@@ -123,6 +139,28 @@ namespace rtl
             toggle_fullscreen,
     #endif
         };
+
+    #if RTL_ENABLE_APP_RESOURCES
+        class resource final
+        {
+        public:
+            resource() = default;
+            ~resource() = default;
+
+            operator bool() const;
+
+            size_t      size() const;
+            const void* data() const;
+
+        private:
+            friend struct input::resources;
+
+            resource( void* data, size_t size );
+
+            void*  m_data{ nullptr };
+            size_t m_size{ 0 };
+        };
+    #endif
 
         using reset_function = void( const input& );
         using update_function = action( const input&, output& );

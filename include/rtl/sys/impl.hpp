@@ -24,6 +24,7 @@
 #include "impl/app/osd.hpp"
 #include "impl/app/proc.hpp"
 #include "impl/app/resize.hpp"
+#include "impl/app/resources.hpp"
 #include "impl/app/screen_buffer.hpp"
 
 #include "impl/opencl/buffer.hpp"
