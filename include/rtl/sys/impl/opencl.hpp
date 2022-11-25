@@ -175,7 +175,6 @@ namespace rtl
 
             static void check( cl_int status, const char* file, int line )
             {
-                // TODO: make human readable message
                 if ( status != CL_SUCCESS )
                     rtl::impl::assert( false, status, error_string( status ), file, line );
             }

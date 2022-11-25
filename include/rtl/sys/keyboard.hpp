@@ -19,7 +19,7 @@ namespace rtl
             // TODO: define and handle more keys
             enum
             {
-                // NOTE: Virtual key codes from Win (as other platforms doesn't implemented)
+                // NOTE: Virtual key codes from Win (as other platforms aren't supported)
                 any,
                 enter = 0x0D,
                 control = 0x11,
