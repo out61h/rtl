@@ -22,6 +22,7 @@ namespace rtl
                 // NOTE: Virtual key codes from Win (as other platforms doesn't implemented)
                 any,
                 enter = 0x0D,
+                control = 0x11,
                 escape = 0x1B,
                 space = 0x20,
                 f1 = 0x70,
