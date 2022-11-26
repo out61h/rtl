@@ -25,11 +25,12 @@ void main()
     application::instance().run(
         L"noise",
         g_app_params,
-        []( const application::input& )
+        []( [[maybe_unused]] const application::input& input )
         {
             g_random.init( 0x1337c0de );
         },
-        []( const application::input& input, [[maybe_unused]] application::output& output )
+        []( [[maybe_unused]] const application::input& input,
+            [[maybe_unused]] application::output&      output )
         {
             if ( input.keys.pressed[keys::escape] )
                 return application::action::close;
