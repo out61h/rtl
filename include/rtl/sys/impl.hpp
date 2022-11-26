@@ -18,6 +18,7 @@
 #include "impl/memory.hpp"
 #include "impl/printf.hpp"
 #include "impl/startup.hpp"
+#include "impl/string.hpp"
 
 #include "impl/app/audio.hpp"
 #include "impl/app/opengl.hpp"

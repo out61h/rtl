@@ -117,18 +117,21 @@ namespace rtl
         static constexpr size_t npos = (size_t)-1;
 
         constexpr basic_string()
-            : m_size( 0 )
+            : m_data( new value_type[1] )
+            , m_size( 0 )
         {
+            m_data[m_size] = 0;
         }
 
         constexpr basic_string( size_t size, value_type ch )
             : m_data( new value_type[size + 1] )
-            , m_size( size + 1 )
+            , m_size( size )
         {
             rtl::fill_n( m_data.get(), m_size, ch );
             m_data[size] = 0;
         }
 
+        // cppcheck-suppress noExplicitConstructor
         constexpr basic_string( const value_type* str )
             : basic_string()
         {
@@ -136,9 +139,10 @@ namespace rtl
             for ( ; *last; )
                 ++last;
 
-            m_size = last - str + 1u;
-            m_data.reset( new value_type[m_size] );
+            m_size = static_cast<size_t>( last - str );
+            m_data.reset( new value_type[m_size + 1] );
             rtl::copy_n( str, m_size, m_data.get() );
+            m_data[m_size] = 0;
         }
 
         constexpr basic_string( nullptr_t ) = delete;
@@ -220,12 +224,10 @@ namespace rtl
                 basic_string_view( data() + from, rtl::min( m_size, to ) - from ) );
         }
 
-        [[nodiscard]] constexpr basic_string operator+( const basic_string_view<T>& rhs ) const
+        [[nodiscard]] constexpr basic_string operator+( basic_string_view<T> rhs ) const
         {
             // TODO: use Strsafe.h routines?
-            basic_string<value_type> result;
-            result.m_size = size() + rhs.size();
-            result.m_data.reset( new value_type[result.m_size + 1] );
+            basic_string<value_type> result( size() + rhs.size(), 0 );
 
             const value_type* src = data();
             value_type*       dst = result.m_data.get();
@@ -328,4 +330,6 @@ namespace rtl
 
     using wstring = basic_string<wchar_t>;
     using wstring_view = basic_string_view<wchar_t>;
+
+    wstring to_wstring( int value );
 } // namespace rtl
