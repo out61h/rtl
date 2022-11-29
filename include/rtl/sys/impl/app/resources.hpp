@@ -42,7 +42,7 @@ namespace rtl
     {
     }
 
-    application::resource application::input::resources::open( int type, int id ) const
+    application::resource application::environment::resources::open( int type, int id ) const
     {
         // NOTE: Accordingly to WinAPI docs we don't need to close resource handles explicitly
         HRSRC hrc = ::FindResourceW( nullptr, MAKEINTRESOURCE( id ), MAKEINTRESOURCE( type ) );

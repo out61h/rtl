@@ -21,6 +21,7 @@
 #include <rtl/sys/debug.hpp>
 #include <rtl/vector.hpp>
 
+#include "audio.hpp"
 #include "memory.hpp"
 #include "win.hpp"
 
@@ -35,10 +36,12 @@ namespace rtl
             class window final
             {
             public:
-                void create( const wchar_t*               app_name,
-                             const application::params&   app_params,
-                             application::reset_function* on_init );
-                void update( application::reset_function*  on_resize,
+                [[nodiscard]] bool create( const wchar_t*              app_name,
+                                           application::setup_function on_setup,
+                                           application::init_function* on_init );
+
+                void update( application::setup_function*  on_setup,
+                             application::init_function*   on_resize,
                              application::update_function* on_update );
 
                 int  width() const;
@@ -46,7 +49,9 @@ namespace rtl
                 bool fullscreen() const;
 
             private:
-                SIZE initial_size( const application::params& app_params ) const;
+                void init_environment();
+
+                SIZE initial_size() const;
 
                 void destroy();
 
@@ -55,6 +60,13 @@ namespace rtl
 
     #if RTL_ENABLE_APP_RESIZE
                 void set_fullscreen_mode( bool fullscreen );
+    #endif
+
+    #if RTL_ENABLE_APP_AUDIO
+                void create_audio();
+                void commit_audio();
+                void restart_audio();
+                void destroy_audio();
     #endif
 
     #if RTL_ENABLE_APP_SCREEN_BUFFER
@@ -69,10 +81,10 @@ namespace rtl
                 void free_osd_text();
         #endif
     #elif RTL_ENABLE_APP_OPENGL
-                void  init_opengl( int width, int height );
-                void  free_opengl();
-                void  commit_opengl();
-                void  enable_opengl_vsync();
+                void init_opengl( int width, int height );
+                void free_opengl();
+                void commit_opengl();
+                void enable_opengl_vsync();
     #endif
                 static constexpr int  minimal_width = 600;
                 static constexpr int  minimal_height = 400;
@@ -91,54 +103,30 @@ namespace rtl
                                                   LPARAM lParam );
 
                 // NOTE: all variables must be initialized to zero
+                //
                 WNDCLASSW m_window_class{ 0 };
-
-                HWND m_window_handle{ nullptr };
+                HWND      m_window_handle{ nullptr };
+                // TODO: Add prefix m_window_
                 RECT m_client_rect{ 0 };
-
-                application::input  m_input{ 0 };
-                application::output m_output{ 0 };
-
-    #if RTL_ENABLE_APP_RESIZE
-                bool m_sizing{ false };
-                bool m_sized{ false };
-                bool m_fullscreen{ false };
-                bool m_resize_pad{ false };
-
-                WINDOWPLACEMENT m_placement{ 0 };
-    #endif
                 bool m_inited{ false };
                 bool m_inited_pad[3]{ false };
 
+                application::input       m_input{ 0 };
+                application::output      m_output{ 0 };
+                application::params      m_params{ 0 };
+                application::environment m_environment{ 0 };
+
+    #if RTL_ENABLE_APP_RESIZE
+                // TODO: Add prefix m_resize_
+                bool            m_sizing{ false };
+                bool            m_sized{ false };
+                bool            m_fullscreen{ false };
+                bool            m_resize_pad{ false };
+                WINDOWPLACEMENT m_placement{ 0 };
+    #endif
+
     #if RTL_ENABLE_APP_AUDIO
-                // TODO: move definition away
-                class audio final
-                {
-                public:
-                    audio( unsigned samples_per_second,
-                           unsigned samples_per_frame,
-                           unsigned frames_per_buffer );
-                    ~audio();
-
-                    [[nodiscard]] int16_t* start();
-                    [[nodiscard]] int16_t* commit();
-
-                    void stop();
-
-                private:
-                    static void CALLBACK
-                        wave_out_proc( HWAVEOUT, UINT, DWORD_PTR, DWORD_PTR, DWORD_PTR );
-
-                    WAVEFORMATEX         m_wave_format{ 0 };
-                    bool                 m_started{ false };
-                    bool                 m_pad{ false };
-                    HWAVEOUT             m_wave_out{ nullptr };
-                    rtl::vector<WAVEHDR> m_wave_headers;
-                    rtl::vector<int16_t> m_buffer;
-                    size_t               m_write_index{ 0 };
-                };
-
-                // NOTE: can't use \unique_ptr here because the \window class must have the trivial
+                // NOTE: can't use \unique_ptr here because the \window class must have a trivial
                 // constructor
                 audio* m_audio{ nullptr };
     #endif
@@ -146,6 +134,7 @@ namespace rtl
     #if RTL_ENABLE_APP_SCREEN_BUFFER
                 HDC m_screen_buffer_dc{ nullptr };
 
+                // TODO: Add prefix m_screen_buffer_
                 BITMAPINFO m_bitmap_info{ 0 };
                 HBITMAP    m_bitmap_handle{ nullptr };
 
@@ -158,6 +147,7 @@ namespace rtl
                 HFONT m_osd_font{ nullptr };
         #endif
     #elif RTL_ENABLE_APP_OPENGL
+                // TODO: Add prefix m_opengl_
                 HGLRC m_glrc_handle{ 0 };
                 HDC   m_window_dc{ 0 };
     #endif
@@ -173,8 +163,7 @@ namespace rtl
                 return m_client_rect.bottom - m_client_rect.top;
             }
 
-            SIZE window::initial_size(
-                [[maybe_unused]] const application::params& app_params ) const
+            SIZE window::initial_size() const
             {
     #if !RTL_ENABLE_APP_RESIZE && RTL_ENABLE_APP_FULLSCREEN
                 RECT window_rect;
@@ -186,9 +175,7 @@ namespace rtl
                 return { window_rect.right - window_rect.left,
                          window_rect.bottom - window_rect.top };
     #else
-
-                return { app_params.window.width ? app_params.window.width : CW_USEDEFAULT,
-                         app_params.window.height ? app_params.window.height : CW_USEDEFAULT };
+                return { CW_USEDEFAULT, CW_USEDEFAULT };
     #endif
             }
 
@@ -201,9 +188,9 @@ namespace rtl
     #endif
             }
 
-            void window::create( const wchar_t*               app_name,
-                                 const application::params&   app_params,
-                                 application::reset_function* on_init )
+            bool window::create( const wchar_t*               app_name,
+                                 application::setup_function* on_setup,
+                                 application::init_function*  on_init )
             {
                 m_window_class.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
                 m_window_class.lpfnWndProc = wnd_proc;
@@ -224,7 +211,7 @@ namespace rtl
                 [[maybe_unused]] ATOM atom = ::RegisterClassW( &m_window_class );
                 RTL_WINAPI_CHECK( atom != 0 );
 
-                const SIZE size = initial_size( app_params );
+                const SIZE size = initial_size();
 
                 m_window_handle
                     = ::CreateWindowExW( WS_EX_APPWINDOW,
@@ -242,6 +229,40 @@ namespace rtl
                                          m_window_class.hInstance,
                                          this );
                 RTL_WINAPI_CHECK( m_window_handle != nullptr );
+                m_input.window_handle = m_window_handle;
+
+                init_environment();
+
+                [[maybe_unused]] BOOL result;
+
+                // NOTE: Application should always have the main window to ensure that singletone
+                // feature works correctly. E.g. the setup callback can create additional dialog
+                // windows and app have to reactivate them correctly after the double launch
+                // attemption.
+                if ( on_setup )
+                {
+                    if ( !on_setup( m_environment, m_params ) )
+                    {
+                        // launch is cancelled
+                        result = ::DestroyWindow( m_window_handle );
+                        RTL_WINAPI_CHECK( result );
+                        return false;
+                    }
+                }
+
+    #if RTL_ENABLE_APP_RESIZE || !RTL_ENABLE_APP_FULLSCREEN
+                if ( m_params.window.width && m_params.window.height )
+                {
+                    result = ::SetWindowPos( m_window_handle,
+                                             nullptr,
+                                             0,
+                                             0,
+                                             m_params.window.width,
+                                             m_params.window.height,
+                                             SWP_NOMOVE | SWP_NOOWNERZORDER | SWP_NOZORDER );
+                    RTL_ASSERT( result );
+                }
+    #endif
 
     #if RTL_ENABLE_APP_RESIZE
                 m_placement.length = sizeof( m_placement );
@@ -251,42 +272,20 @@ namespace rtl
     #else
                 m_inited = true;
     #endif
-
                 create_resizable_components( false );
 
-                BOOL result;
-
     #if RTL_ENABLE_APP_AUDIO
-                {
-                    DEVMODEA mode;
-                    result = ::EnumDisplaySettingsA( nullptr, ENUM_CURRENT_SETTINGS, &mode );
-                    RTL_WINAPI_CHECK( result );
-                    RTL_ASSERT( mode.dmDisplayFrequency > 1 );
-                    RTL_ASSERT( app_params.audio.samples_per_second > 0 );
-                    RTL_ASSERT( app_params.audio.max_latency_samples > 0 );
-
-                    m_input.audio.samples_per_second = app_params.audio.samples_per_second;
-                    m_input.audio.samples_per_frame
-                        = app_params.audio.samples_per_second / mode.dmDisplayFrequency;
-
-                    const size_t buffers_count
-                        = app_params.audio.max_latency_samples / m_input.audio.samples_per_frame;
-
-                    m_audio = new audio( m_input.audio.samples_per_second,
-                                         m_input.audio.samples_per_frame,
-                                         buffers_count > 1 ? buffers_count : 2 );
-
-                    m_input.audio.frame = m_audio->start();
-                }
+                create_audio();
     #endif
-
                 ::ShowWindow( m_window_handle, SW_SHOW );
 
                 result = ::UpdateWindow( m_window_handle );
                 RTL_WINAPI_CHECK( result );
 
                 if ( on_init )
-                    on_init( m_input );
+                    on_init( m_environment, m_input );
+
+                return true;
             }
 
             void window::create_resizable_components( [[maybe_unused]] bool resize )
@@ -331,14 +330,15 @@ namespace rtl
                 destroy_resizable_components( false );
 
     #if RTL_ENABLE_APP_AUDIO
-                delete m_audio;
+                destroy_audio();
     #endif
 
                 // NOTE: Non-critical for the application beying terminated
                 // ::UnregisterClassW( m_window_class.lpszClassName, m_window_class.hInstance );
             }
 
-            void window::update( [[maybe_unused]] application::reset_function* on_resize,
+            void window::update( [[maybe_unused]] application::setup_function* on_setup,
+                                 [[maybe_unused]] application::init_function*  on_init,
                                  application::update_function*                 on_update )
             {
                 if ( !m_inited )
@@ -355,14 +355,13 @@ namespace rtl
     #if RTL_ENABLE_APP_RESIZE
                 if ( m_sized )
                 {
-        #if RTL_ENABLE_APP_AUDIO
-                    m_input.audio.frame = m_audio->start();
-        #endif
                     destroy_resizable_components( true );
                     create_resizable_components( true );
-
-                    if ( on_resize )
-                        on_resize( m_input );
+        #if RTL_ENABLE_APP_AUDIO
+                    restart_audio();
+        #endif
+                    if ( on_init )
+                        on_init( m_environment, m_input );
 
                     m_sized = false;
                 }
@@ -386,6 +385,42 @@ namespace rtl
                     set_fullscreen_mode( !m_fullscreen );
                     break;
     #endif
+    #if RTL_ENABLE_APP_RESET
+                case application::action::reset:
+                {
+                    if ( on_setup )
+                    {
+        #if RTL_ENABLE_APP_OPENGL
+                        // NOTE: Hack listed here
+                        // https://stackoverflow.com/questions/2378918/modal-dialogs-opened-by-a-fullscreen-opengl-window-on-windows-7-are-not-showing
+                        result = ::RedrawWindow( m_window_handle, 0, 0, RDW_INTERNALPAINT );
+                        RTL_WINAPI_CHECK( result );
+        #endif
+                        if ( on_setup( m_environment, m_params ) )
+                        {
+        #if RTL_ENABLE_APP_AUDIO
+                            destroy_audio();
+                            create_audio();
+        #endif
+
+        #if RTL_ENABLE_APP_RESIZE || !RTL_ENABLE_APP_FULLSCREEN
+                                    // TODO: If fixed size window -> resize window and fetch
+                                    // m_sized event
+                                    // TODO: If resizable window but fullscreen mode -> update
+                                    // window size into set_fullscreen_mode
+                                    // TODO: If resizable window in windowed mode -> update
+                                    // window size immediately
+        #endif
+
+                            // NOTE: \on_init should always be called immediatelly after \on_setup
+                            if ( on_init )
+                                on_init( m_environment, m_input );
+                        }
+                    }
+
+                    break;
+                }
+    #endif
 
                 case application::action::none:
                 default:
@@ -394,9 +429,8 @@ namespace rtl
     #elif RTL_ENABLE_APP_OPENGL
                     commit_opengl();
     #endif
-
     #if RTL_ENABLE_APP_AUDIO
-                    m_input.audio.frame = m_audio->commit();
+                    commit_audio();
     #endif
                     break;
                 }
@@ -409,8 +443,8 @@ namespace rtl
     } // namespace impl
 
     void application::run( const wchar_t*      app_name,
-                           const params&       app_params,
-                           reset_function*     on_reset,
+                           setup_function*     on_setup,
+                           init_function*      on_init,
                            update_function*    on_update,
                            terminate_function* on_terminate )
     {
@@ -420,11 +454,24 @@ namespace rtl
 
         if ( mutex )
         {
-            HWND wnd = ::FindWindowW( app_name, nullptr );
-            if ( wnd != nullptr )
+            // Find application's main window (can be hidden)
+            HWND window = ::FindWindowW( app_name, nullptr );
+            if ( window != nullptr )
             {
-                ::ShowWindow( wnd, SW_SHOWNOACTIVATE );
-                ::SetForegroundWindow( wnd );
+                // Main window ownes popup window (e.g. dialog box)
+                if ( HWND dialog = ::GetWindow( window, GW_ENABLEDPOPUP ) )
+                    window = dialog;
+
+                // Main window is hidden, but has sibling window (e.g. dialog box)
+                if ( !::IsWindowVisible( window ) )
+                    window = ::GetWindow( window, GW_HWNDPREV );
+
+                // Anyway, do not touch hidden windows
+                if ( ::IsWindowVisible( window ) )
+                {
+                    ::ShowWindow( window, SW_SHOWNOACTIVATE );
+                    ::SetForegroundWindow( window );
+                }
             }
 
             return;
@@ -434,7 +481,8 @@ namespace rtl
         RTL_WINAPI_CHECK( mutex != nullptr );
     #endif
 
-        impl::win::g_window.create( app_name, app_params, on_reset );
+        if ( !impl::win::g_window.create( app_name, on_setup, on_init ) )
+            return;
 
         MSG msg{ 0 };
 
@@ -452,7 +500,7 @@ namespace rtl
             // TODO: wait for signal to update
             // TODO: run processing in separate thread
             // TODO: return time for next start or -1 for infinite wait
-            impl::win::g_window.update( on_reset, on_update );
+            impl::win::g_window.update( on_setup, on_init, on_update );
         }
 
         if ( on_terminate )

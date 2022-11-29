@@ -25,6 +25,31 @@ namespace rtl
         class resource;
     #endif
 
+        struct environment
+        {
+            void* window_handle; // CAUTION: it is better to NOT touch the V̪̪̟O͇̘̞I̝̞D͇͚͜!!!
+
+    #if RTL_ENABLE_APP_AUDIO
+            // NOTE: Used by audio module to calculate the size of the audio frame buffer
+            // TODO: Add support of multimonitor systems with different framerates
+            struct display
+            {
+                unsigned framerate;
+            } display;
+    #endif
+
+    #if RTL_ENABLE_APP_RESOURCES
+            struct resources
+            {
+                void* void_resource; // CAUTION: it is better to NOT touch the V̪̪̟O͇̘̞I̝̞D͇͚͜!!!
+
+                resource open( int type, int id ) const;
+
+                // TODO: Implement resource iterator
+            } resources;
+    #endif
+        };
+
         struct params
         {
             void* void_param; // CAUTION: it is better to NOT touch the V̪̪̟O͇̘̞I̝̞D͇͚͜!!!
@@ -48,7 +73,7 @@ namespace rtl
 
         struct input
         {
-            void* void_source; // CAUTION: it is better to NOT touch the V̪̪̟O͇̘̞I̝̞D͇͚͜!!!
+            void* window_handle; // CAUTION: it is better to NOT touch the V̪̪̟O͇̘̞I̝̞D͇͚͜!!!
 
     #if RTL_ENABLE_APP_KEYS
             struct keys
@@ -67,17 +92,6 @@ namespace rtl
                 // monotone counter of thirds (1/60 of second)
                 int32_t thirds;
             } clock;
-    #endif
-
-    #if RTL_ENABLE_APP_RESOURCES
-            struct resources
-            {
-                void* void_resource; // CAUTION: it is better to NOT touch the V̪̪̟O͇̘̞I̝̞D͇͚͜!!!
-
-                resource open( int type, int id ) const;
-
-                // TODO: resource iterator
-            } resources;
     #endif
 
     #if RTL_ENABLE_APP_AUDIO
@@ -135,6 +149,9 @@ namespace rtl
         {
             none,
             close,
+    #if RTL_ENABLE_APP_RESET
+            reset,
+    #endif
     #if RTL_ENABLE_APP_RESIZE
             toggle_fullscreen,
     #endif
@@ -153,7 +170,7 @@ namespace rtl
             const void* data() const;
 
         private:
-            friend struct input::resources;
+            friend struct environment::resources;
 
             resource( void* data, size_t size );
 
@@ -162,7 +179,8 @@ namespace rtl
         };
     #endif
 
-        using reset_function = void( const input& );
+        using setup_function = bool( const environment&, params& );
+        using init_function = void( const environment&, const input& );
         using update_function = action( const input&, output& );
         using terminate_function = void();
 
@@ -170,8 +188,8 @@ namespace rtl
         static application& instance();
 
         void run( const wchar_t*      app_name,
-                  const params&       app_params,
-                  reset_function*     on_reset,
+                  setup_function*     on_setup,
+                  init_function*      on_init,
                   update_function*    on_update,
                   terminate_function* on_terminate );
 

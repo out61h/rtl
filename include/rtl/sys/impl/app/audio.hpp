@@ -15,10 +15,10 @@
 #endif
 
 #include <rtl/sys/impl/application.hpp>
+#include <rtl/sys/impl/win.hpp>
 
 #if RTL_ENABLE_APP
     #if RTL_ENABLE_APP_AUDIO
-        // TODO: "Retry, ignore, abort" loop
         #if RTL_ENABLE_RUNTIME_CHECKS
             #define RTL_MM_WAVEOUT_CHECK( code ) \
                 rtl::impl::win::check_mm_waveout( code, __FILE__, __LINE__ )
@@ -32,6 +32,48 @@ namespace rtl
     {
         namespace win
         {
+            void window::create_audio()
+            {
+                RTL_ASSERT( !m_audio );
+
+                m_input.audio.samples_per_second = m_params.audio.samples_per_second;
+                m_input.audio.samples_per_frame
+                    = m_params.audio.samples_per_second / m_environment.display.framerate;
+
+                if ( m_input.audio.samples_per_second > 0 )
+                {
+                    const size_t buffers_count
+                        = m_params.audio.max_latency_samples / m_input.audio.samples_per_frame;
+
+                    m_audio = new audio( m_input.audio.samples_per_second,
+                                         m_input.audio.samples_per_frame,
+                                         buffers_count > 1 ? buffers_count : 2 );
+                }
+
+                restart_audio();
+            }
+
+            void window::destroy_audio()
+            {
+                delete m_audio;
+                m_audio = nullptr;
+                m_input.audio.frame = nullptr;
+            }
+
+            void window::commit_audio()
+            {
+                if ( m_audio )
+                    m_input.audio.frame = m_audio->commit();
+            }
+
+            void window::restart_audio()
+            {
+                if ( m_audio )
+                    m_input.audio.frame = m_audio->start();
+                else
+                    m_input.audio.frame = nullptr;
+            }
+
         #if RTL_ENABLE_RUNTIME_CHECKS
             void check_mm_waveout( DWORD code, const char* file, int line )
             {
@@ -46,9 +88,9 @@ namespace rtl
             }
         #endif
 
-            window::audio::audio( unsigned samples_per_second,
-                                  unsigned samples_per_frame,
-                                  unsigned frames_per_buffer )
+            audio::audio( unsigned samples_per_second,
+                          unsigned samples_per_frame,
+                          unsigned frames_per_buffer )
             {
                 RTL_ASSERT( samples_per_second > 0 );
                 RTL_ASSERT( samples_per_frame > 0 );
@@ -95,7 +137,7 @@ namespace rtl
                 RTL_MM_WAVEOUT_CHECK( result );
             }
 
-            window::audio::~audio()
+            audio::~audio()
             {
                 if ( m_wave_out )
                 {
@@ -113,11 +155,11 @@ namespace rtl
                 }
             }
 
-            void window::audio::wave_out_proc( HWAVEOUT /* hwo */,
-                                               UINT      msg,
-                                               DWORD_PTR instance,
-                                               DWORD_PTR param1,
-                                               DWORD_PTR /* param2 */ )
+            void audio::wave_out_proc( HWAVEOUT /* hwo */,
+                                       UINT      msg,
+                                       DWORD_PTR instance,
+                                       DWORD_PTR param1,
+                                       DWORD_PTR /* param2 */ )
             {
                 [[maybe_unused]] window* const that = reinterpret_cast<window*>( instance );
 
@@ -133,7 +175,7 @@ namespace rtl
                 }
             }
 
-            [[nodiscard]] int16_t* window::audio::start()
+            [[nodiscard]] int16_t* audio::start()
             {
                 [[maybe_unused]] MMRESULT result = ::waveOutReset( m_wave_out );
                 RTL_MM_WAVEOUT_CHECK( result );
@@ -144,7 +186,7 @@ namespace rtl
                 return reinterpret_cast<int16_t*>( m_wave_headers.front().lpData );
             }
 
-            void window::audio::stop()
+            void audio::stop()
             {
                 [[maybe_unused]] MMRESULT result = ::waveOutReset( m_wave_out );
                 RTL_MM_WAVEOUT_CHECK( result );
@@ -153,7 +195,7 @@ namespace rtl
                 m_started = false;
             }
 
-            int16_t* window::audio::commit()
+            int16_t* audio::commit()
             {
                 MMRESULT result = ::waveOutWrite(
                     m_wave_out, &m_wave_headers[m_write_index], sizeof( WAVEHDR ) );

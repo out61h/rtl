@@ -65,6 +65,8 @@ namespace rtl
 
                     result = ::SetWindowPlacement( m_window_handle, &m_placement );
                     RTL_WINAPI_CHECK( result );
+
+                    // TODO: change size if window size doesn't match m_params
                 }
             }
 

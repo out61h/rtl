@@ -43,6 +43,7 @@ namespace rtl
                 case WM_CLOSE:
                 {
                     [[maybe_unused]] BOOL result = ::DestroyWindow( that->m_window_handle );
+                    RTL_WINAPI_CHECK( result );
                     return 0;
                 }
 
@@ -63,6 +64,7 @@ namespace rtl
                     rtl::fill_n( that->m_input.keys.state, (size_t)keyboard::keys::count, false );
                     return 0;
 
+                case WM_SYSKEYDOWN:
                 case WM_KEYDOWN:
                 {
                     const unsigned key = static_cast<unsigned>( wParam );
@@ -74,6 +76,7 @@ namespace rtl
                     return 0;
                 }
 
+                case WM_SYSKEYUP:
                 case WM_KEYUP:
                 {
                     const unsigned key = static_cast<unsigned>( wParam );
@@ -137,16 +140,34 @@ namespace rtl
                     HDC hdc = ::BeginPaint( hWnd, &ps );
                     RTL_WINAPI_CHECK( hdc != nullptr );
 
-        #if RTL_ENABLE_APP_SCREEN_BUFFER
-            #if RTL_ENABLE_APP_OSD
+        #if RTL_ENABLE_APP_OSD
                     that->draw_osd_text( hdc );
-            #endif
-                    that->draw_screen_buffer( hdc );
         #endif
+                    that->draw_screen_buffer( hdc );
 
                     [[maybe_unused]] BOOL result = ::EndPaint( hWnd, &ps );
                     RTL_WINAPI_CHECK( result );
                     return 0;
+                }
+    #else
+                case WM_PAINT:
+                {
+        #if RTL_ENABLE_APP_RESIZE
+                    if ( that->m_sizing )
+                        break;
+        #endif
+                    // NOTE: Hack listed here:
+                    // https://stackoverflow.com/questions/2378918/modal-dialogs-opened-by-a-fullscreen-opengl-window-on-windows-7-are-not-showing
+                    // Also helps to eliminate black invalidated areas on window after moving it out
+                    // of the desktop
+                    PAINTSTRUCT ps;
+
+                    HDC hdc = ::BeginPaint( hWnd, &ps );
+                    RTL_WINAPI_CHECK( hdc != nullptr );
+                    SwapBuffers( hdc );
+                    [[maybe_unused]] BOOL result = ::EndPaint( hWnd, &ps );
+                    RTL_WINAPI_CHECK( result );
+                    break;
                 }
     #endif
 
