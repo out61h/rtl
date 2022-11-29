@@ -154,26 +154,6 @@ namespace rtl
             return *this;
         }
 
-        size_t read_file_content( const wchar_t* name, void* buffer, size_t buffer_size )
-        {
-            HANDLE file = ::CreateFileW(
-                name, GENERIC_READ, FILE_SHARE_READ, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0 );
-
-            if ( file == INVALID_HANDLE_VALUE )
-                return 0;
-
-            const DWORD bytes_to_read = buffer_size;
-            DWORD       bytes_read = 0;
-
-            BOOL result = ::ReadFile( file, buffer, bytes_to_read, &bytes_read, FALSE );
-            RTL_WINAPI_CHECK( result );
-
-            result = ::CloseHandle( file );
-            RTL_WINAPI_CHECK( result );
-
-            return bytes_read;
-        }
-
         file::file()
             : m_handle( INVALID_HANDLE_VALUE )
         {
