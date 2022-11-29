@@ -332,4 +332,5 @@ namespace rtl
     using wstring_view = basic_string_view<wchar_t>;
 
     wstring to_wstring( int value );
+    wstring to_wstring( unsigned value );
 } // namespace rtl
