@@ -26,4 +26,12 @@ namespace rtl
 
         return wstring( buffer );
     }
+
+    wstring to_wstring( unsigned value )
+    {
+        wchar_t buffer[16];
+        wsprintf_s( buffer, "%u", value );
+
+        return wstring( buffer );
+    }
 } // namespace rtl
