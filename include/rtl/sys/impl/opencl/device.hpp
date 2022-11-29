@@ -127,6 +127,16 @@ namespace rtl
             return devices;
         }
 
+        [[nodiscard]] bool device::operator==( const device& rhs ) const
+        {
+            return m_id == rhs.m_id;
+        }
+
+        [[nodiscard]] bool device::operator!=( const device& rhs ) const
+        {
+            return !operator==( rhs );
+        }
+
     } // namespace opencl
 } // namespace rtl
 

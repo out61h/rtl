@@ -18,7 +18,6 @@
 
     #include <CL/opencl.h>
 
-    // TODO: "Retry, ignore, abort" loop
     #if RTL_ENABLE_RUNTIME_CHECKS
         #define RTL_OPENCL_CHECK( condition ) \
             rtl::opencl::impl::check( condition, __FILE__, __LINE__ )

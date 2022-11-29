@@ -65,6 +65,9 @@ namespace rtl
                 return m_version;
             }
 
+            [[nodiscard]] bool operator==( const device& rhs ) const;
+            [[nodiscard]] bool operator!=( const device& rhs ) const;
+
         private:
             friend class context;
 
