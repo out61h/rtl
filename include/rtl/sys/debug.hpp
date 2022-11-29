@@ -10,10 +10,6 @@
  */
 #pragma once
 
-// TODO: lightweight release checks with hash code of __FILE__ and __LINE__
-// TODO: assert macro with looping until condition becomes true and options like RETRY, ABORT,
-// IGNORE
-
 #if RTL_ENABLE_ASSERT
     #define RTL_ASSERT( expr ) rtl::impl::assert( expr, 0u, #expr, __FILE__, __LINE__ )
 #else

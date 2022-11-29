@@ -173,7 +173,5 @@ namespace rtl
 
             void* m_handle;
         };
-
-        size_t read_file_content( const wchar_t* name, void* buffer, size_t buffer_size );
     } // namespace filesystem
 } // namespace rtl

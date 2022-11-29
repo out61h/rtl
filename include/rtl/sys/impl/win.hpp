@@ -53,7 +53,6 @@
 
 #include <Windows.h>
 
-// TODO: "Retry, ignore, abort" loop
 #if RTL_ENABLE_RUNTIME_CHECKS
     #define RTL_WINAPI_CHECK( condition ) rtl::impl::win::check( condition, __FILE__, __LINE__ )
 #else

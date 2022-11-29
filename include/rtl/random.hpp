@@ -14,8 +14,6 @@
 
 namespace rtl
 {
-    // TODO: implement STL-like API
-
     // Complementary-multiply-with-carry (CMWC) pseudorandom number generator.
     // https://en.wikipedia.org/wiki/Multiply-with-carry_pseudorandom_number_generator
     template<int cycle_length>
