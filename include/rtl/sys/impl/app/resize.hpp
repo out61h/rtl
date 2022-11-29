@@ -27,19 +27,19 @@ namespace rtl
         {
             void window::set_fullscreen_mode( bool fullscreen )
             {
-                m_fullscreen = fullscreen;
+                m_resize_fullscreen = fullscreen;
 
                 [[maybe_unused]] BOOL result;
 
-                if ( m_fullscreen )
+                if ( m_resize_fullscreen )
                 {
-                    result = ::GetWindowPlacement( m_window_handle, &m_placement );
+                    result = ::GetWindowPlacement( m_window_handle, &m_resize_placement );
                     RTL_WINAPI_CHECK( result );
 
                     [[maybe_unused]] LONG res = ::SetWindowLongW(
                         m_window_handle,
                         GWL_STYLE,
-                        (LONG)( m_fullscreen ? fullscreen_style : resizable_style ) );
+                        (LONG)( m_resize_fullscreen ? fullscreen_style : resizable_style ) );
                     RTL_WINAPI_CHECK( res != 0 );
 
                     RECT rect;
@@ -60,10 +60,10 @@ namespace rtl
                     [[maybe_unused]] LONG res = ::SetWindowLongW(
                         m_window_handle,
                         GWL_STYLE,
-                        (LONG)( m_fullscreen ? fullscreen_style : resizable_style ) );
+                        (LONG)( m_resize_fullscreen ? fullscreen_style : resizable_style ) );
                     RTL_WINAPI_CHECK( res != 0 );
 
-                    result = ::SetWindowPlacement( m_window_handle, &m_placement );
+                    result = ::SetWindowPlacement( m_window_handle, &m_resize_placement );
                     RTL_WINAPI_CHECK( result );
 
                     // TODO: change size if window size doesn't match m_params

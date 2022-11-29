@@ -39,25 +39,25 @@ namespace rtl
 
                 ::ReleaseDC( m_window_handle, hdc );
 
-                m_bitmap_info.bmiHeader.biWidth = width;
-                m_bitmap_info.bmiHeader.biHeight = -height;
-                m_bitmap_info.bmiHeader.biSize = sizeof( BITMAPINFOHEADER );
-                m_bitmap_info.bmiHeader.biPlanes = 1;
-                m_bitmap_info.bmiHeader.biBitCount = 24;
-                m_bitmap_info.bmiHeader.biCompression = BI_RGB;
-                m_bitmap_info.bmiHeader.biXPelsPerMeter = 0x130B;
-                m_bitmap_info.bmiHeader.biYPelsPerMeter = 0x130B;
+                m_screen_buffer_bitmap_info.bmiHeader.biWidth = width;
+                m_screen_buffer_bitmap_info.bmiHeader.biHeight = -height;
+                m_screen_buffer_bitmap_info.bmiHeader.biSize = sizeof( BITMAPINFOHEADER );
+                m_screen_buffer_bitmap_info.bmiHeader.biPlanes = 1;
+                m_screen_buffer_bitmap_info.bmiHeader.biBitCount = 24;
+                m_screen_buffer_bitmap_info.bmiHeader.biCompression = BI_RGB;
+                m_screen_buffer_bitmap_info.bmiHeader.biXPelsPerMeter = 0x130B;
+                m_screen_buffer_bitmap_info.bmiHeader.biYPelsPerMeter = 0x130B;
 
-                RTL_ASSERT( m_bitmap_handle == nullptr );
+                RTL_ASSERT( m_screen_buffer_bitmap_handle == nullptr );
 
-                m_bitmap_handle
+                m_screen_buffer_bitmap_handle
                     = ::CreateDIBSection( m_screen_buffer_dc,
-                                          &m_bitmap_info,
+                                          &m_screen_buffer_bitmap_info,
                                           DIB_RGB_COLORS,
                                           reinterpret_cast<void**>( &m_input.screen.pixels ),
                                           nullptr,
                                           0 );
-                RTL_WINAPI_CHECK( m_bitmap_handle != nullptr );
+                RTL_WINAPI_CHECK( m_screen_buffer_bitmap_handle != nullptr );
 
                 constexpr size_t sizeof_rgb = 3;
                 constexpr size_t align = sizeof( LONG );
@@ -68,12 +68,12 @@ namespace rtl
             void window::draw_screen_buffer( HDC hdc )
             {
                 [[maybe_unused]] HGDIOBJ object
-                    = ::SelectObject( m_screen_buffer_dc, m_bitmap_handle );
+                    = ::SelectObject( m_screen_buffer_dc, m_screen_buffer_bitmap_handle );
                 RTL_WINAPI_CHECK( object != nullptr );
                 RTL_ASSERT( ::GetObjectType( object ) == OBJ_BITMAP );
 
-                const int bitmap_width = m_bitmap_info.bmiHeader.biWidth;
-                const int bitmap_height = -m_bitmap_info.bmiHeader.biHeight;
+                const int bitmap_width = m_screen_buffer_bitmap_info.bmiHeader.biWidth;
+                const int bitmap_height = -m_screen_buffer_bitmap_info.bmiHeader.biHeight;
 
                 RTL_ASSERT( bitmap_width <= width() );
                 RTL_ASSERT( bitmap_height <= height() );
@@ -91,7 +91,7 @@ namespace rtl
 
                 // TODO: This call brokes font rendering; deal with it later
                 // object = ::SelectObject( that->m_screen_buffer_dc, object );
-                // RTL_ASSERT( object == that->m_bitmap_handle );
+                // RTL_ASSERT( object == that->m_screen_buffer_bitmap_handle );
             }
 
             void window::free_screen_buffer()
@@ -103,11 +103,11 @@ namespace rtl
                     m_screen_buffer_dc = nullptr;
                 }
 
-                if ( m_bitmap_handle )
+                if ( m_screen_buffer_bitmap_handle )
                 {
-                    [[maybe_unused]] BOOL result = ::DeleteObject( m_bitmap_handle );
+                    [[maybe_unused]] BOOL result = ::DeleteObject( m_screen_buffer_bitmap_handle );
                     RTL_WINAPI_CHECK( result );
-                    m_bitmap_handle = nullptr;
+                    m_screen_buffer_bitmap_handle = nullptr;
                 }
 
                 m_input.screen.pixels = nullptr;

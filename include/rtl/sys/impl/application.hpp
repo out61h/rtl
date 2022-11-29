@@ -81,10 +81,10 @@ namespace rtl
                 void free_osd_text();
         #endif
     #elif RTL_ENABLE_APP_OPENGL
-                void init_opengl( int width, int height );
-                void free_opengl();
-                void commit_opengl();
-                void enable_opengl_vsync();
+                void  init_opengl( int width, int height );
+                void  free_opengl();
+                void  commit_opengl();
+                void  enable_opengl_vsync();
     #endif
                 static constexpr int  minimal_width = 600;
                 static constexpr int  minimal_height = 400;
@@ -106,10 +106,9 @@ namespace rtl
                 //
                 WNDCLASSW m_window_class{ 0 };
                 HWND      m_window_handle{ nullptr };
-                // TODO: Add prefix m_window_
-                RECT m_client_rect{ 0 };
-                bool m_inited{ false };
-                bool m_inited_pad[3]{ false };
+                RECT      m_window_rect{ 0 };
+                bool      m_window_inited{ false };
+                bool      m_window_pad[3]{ false };
 
                 application::input       m_input{ 0 };
                 application::output      m_output{ 0 };
@@ -117,12 +116,11 @@ namespace rtl
                 application::environment m_environment{ 0 };
 
     #if RTL_ENABLE_APP_RESIZE
-                // TODO: Add prefix m_resize_
-                bool            m_sizing{ false };
-                bool            m_sized{ false };
-                bool            m_fullscreen{ false };
+                bool            m_resize_sizing{ false };
+                bool            m_resize_sized{ false };
+                bool            m_resize_fullscreen{ false };
                 bool            m_resize_pad{ false };
-                WINDOWPLACEMENT m_placement{ 0 };
+                WINDOWPLACEMENT m_resize_placement{ 0 };
     #endif
 
     #if RTL_ENABLE_APP_AUDIO
@@ -132,11 +130,9 @@ namespace rtl
     #endif
 
     #if RTL_ENABLE_APP_SCREEN_BUFFER
-                HDC m_screen_buffer_dc{ nullptr };
-
-                // TODO: Add prefix m_screen_buffer_
-                BITMAPINFO m_bitmap_info{ 0 };
-                HBITMAP    m_bitmap_handle{ nullptr };
+                HDC        m_screen_buffer_dc{ nullptr };
+                BITMAPINFO m_screen_buffer_bitmap_info{ 0 };
+                HBITMAP    m_screen_buffer_bitmap_handle{ nullptr };
 
         #if RTL_ENABLE_APP_OSD
                 static constexpr auto osd_locations_count
@@ -147,20 +143,19 @@ namespace rtl
                 HFONT m_osd_font{ nullptr };
         #endif
     #elif RTL_ENABLE_APP_OPENGL
-                // TODO: Add prefix m_opengl_
-                HGLRC m_glrc_handle{ 0 };
-                HDC   m_window_dc{ 0 };
+                HGLRC m_opengl_rc_handle{ 0 };
+                HDC   m_opengl_window_dc{ 0 };
     #endif
             };
 
             int window::width() const
             {
-                return m_client_rect.right - m_client_rect.left;
+                return m_window_rect.right - m_window_rect.left;
             }
 
             int window::height() const
             {
-                return m_client_rect.bottom - m_client_rect.top;
+                return m_window_rect.bottom - m_window_rect.top;
             }
 
             SIZE window::initial_size() const
@@ -182,7 +177,7 @@ namespace rtl
             bool window::fullscreen() const
             {
     #if RTL_ENABLE_APP_RESIZE
-                return m_fullscreen;
+                return m_resize_fullscreen;
     #else
                 return RTL_ENABLE_APP_FULLSCREEN;
     #endif
@@ -265,12 +260,12 @@ namespace rtl
     #endif
 
     #if RTL_ENABLE_APP_RESIZE
-                m_placement.length = sizeof( m_placement );
+                m_resize_placement.length = sizeof( m_resize_placement );
 
                 if constexpr ( is_fullscreen )
                     set_fullscreen_mode( true );
     #else
-                m_inited = true;
+                m_window_inited = true;
     #endif
                 create_resizable_components( false );
 
@@ -290,7 +285,7 @@ namespace rtl
 
             void window::create_resizable_components( [[maybe_unused]] bool resize )
             {
-                [[maybe_unused]] BOOL result = ::GetClientRect( m_window_handle, &m_client_rect );
+                [[maybe_unused]] BOOL result = ::GetClientRect( m_window_handle, &m_window_rect );
                 RTL_WINAPI_CHECK( result );
 
                 const int width = this->width();
@@ -325,7 +320,7 @@ namespace rtl
 
             void window::destroy()
             {
-                m_inited = false;
+                m_window_inited = false;
 
                 destroy_resizable_components( false );
 
@@ -341,7 +336,7 @@ namespace rtl
                                  [[maybe_unused]] application::init_function*  on_init,
                                  application::update_function*                 on_update )
             {
-                if ( !m_inited )
+                if ( !m_window_inited )
                     return;
 
                 [[maybe_unused]] BOOL result = ::GdiFlush();
@@ -353,7 +348,7 @@ namespace rtl
     #endif
 
     #if RTL_ENABLE_APP_RESIZE
-                if ( m_sized )
+                if ( m_resize_sized )
                 {
                     destroy_resizable_components( true );
                     create_resizable_components( true );
@@ -363,7 +358,7 @@ namespace rtl
                     if ( on_init )
                         on_init( m_environment, m_input );
 
-                    m_sized = false;
+                    m_resize_sized = false;
                 }
     #endif
 
@@ -382,7 +377,7 @@ namespace rtl
 
     #if RTL_ENABLE_APP_RESIZE
                 case application::action::toggle_fullscreen:
-                    set_fullscreen_mode( !m_fullscreen );
+                    set_fullscreen_mode( !m_resize_fullscreen );
                     break;
     #endif
     #if RTL_ENABLE_APP_RESET
@@ -405,7 +400,7 @@ namespace rtl
 
         #if RTL_ENABLE_APP_RESIZE || !RTL_ENABLE_APP_FULLSCREEN
                                     // TODO: If fixed size window -> resize window and fetch
-                                    // m_sized event
+                                    // m_resize_sized event
                                     // TODO: If resizable window but fullscreen mode -> update
                                     // window size into set_fullscreen_mode
                                     // TODO: If resizable window in windowed mode -> update

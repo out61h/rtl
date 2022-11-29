@@ -88,7 +88,7 @@ namespace rtl
     #if RTL_ENABLE_APP_RESIZE
                 case WM_SIZING:
                 {
-                    that->m_sizing = true;
+                    that->m_resize_sizing = true;
                     return 0;
                 }
 
@@ -103,7 +103,7 @@ namespace rtl
 
                 case WM_EXITSIZEMOVE:
                 {
-                    that->m_sizing = false;
+                    that->m_resize_sizing = false;
                     return 0;
                 }
 
@@ -111,8 +111,8 @@ namespace rtl
                 {
                     if ( wParam != SIZE_MINIMIZED )
                     {
-                        that->m_sized = that->m_inited;
-                        that->m_inited = true;
+                        that->m_resize_sized = that->m_window_inited;
+                        that->m_window_inited = true;
                     }
 
                     return 0;
@@ -132,7 +132,7 @@ namespace rtl
                 case WM_PAINT:
                 {
         #if RTL_ENABLE_APP_RESIZE
-                    if ( that->m_sizing )
+                    if ( that->m_resize_sizing )
                         break;
         #endif
                     PAINTSTRUCT ps;
@@ -153,7 +153,7 @@ namespace rtl
                 case WM_PAINT:
                 {
         #if RTL_ENABLE_APP_RESIZE
-                    if ( that->m_sizing )
+                    if ( that->m_resize_sizing )
                         break;
         #endif
                     // NOTE: Hack listed here:

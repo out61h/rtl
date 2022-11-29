@@ -35,8 +35,8 @@ namespace rtl
         {
             void window::init_opengl( [[maybe_unused]] int width, [[maybe_unused]] int height )
             {
-                m_window_dc = ::GetDC( m_window_handle );
-                RTL_WINAPI_CHECK( m_window_dc != nullptr );
+                m_opengl_window_dc = ::GetDC( m_window_handle );
+                RTL_WINAPI_CHECK( m_opengl_window_dc != nullptr );
 
                 PIXELFORMATDESCRIPTOR pfd{ 0 };
 
@@ -47,16 +47,17 @@ namespace rtl
                 pfd.iPixelType = PFD_TYPE_RGBA;
                 pfd.cColorBits = 32;
 
-                const int pixelFormat = ::ChoosePixelFormat( m_window_dc, &pfd );
+                const int pixelFormat = ::ChoosePixelFormat( m_opengl_window_dc, &pfd );
                 RTL_WINAPI_CHECK( pixelFormat != 0 );
 
-                [[maybe_unused]] BOOL result = ::SetPixelFormat( m_window_dc, pixelFormat, &pfd );
+                [[maybe_unused]] BOOL result
+                    = ::SetPixelFormat( m_opengl_window_dc, pixelFormat, &pfd );
                 RTL_WINAPI_CHECK( result );
 
-                m_glrc_handle = ::wglCreateContext( m_window_dc );
-                RTL_WINAPI_CHECK( m_glrc_handle != nullptr );
+                m_opengl_rc_handle = ::wglCreateContext( m_opengl_window_dc );
+                RTL_WINAPI_CHECK( m_opengl_rc_handle != nullptr );
 
-                result = ::wglMakeCurrent( m_window_dc, m_glrc_handle );
+                result = ::wglMakeCurrent( m_opengl_window_dc, m_opengl_rc_handle );
                 RTL_WINAPI_CHECK( result );
 
         #if RTL_ENABLE_APP_OPENGL_VSYNC
@@ -66,27 +67,27 @@ namespace rtl
 
             void window::free_opengl()
             {
-                if ( m_glrc_handle )
+                if ( m_opengl_rc_handle )
                 {
                     [[maybe_unused]] BOOL result = ::wglMakeCurrent( nullptr, nullptr );
                     RTL_WINAPI_CHECK( result );
 
-                    result = ::wglDeleteContext( m_glrc_handle );
+                    result = ::wglDeleteContext( m_opengl_rc_handle );
                     RTL_WINAPI_CHECK( result );
 
-                    m_glrc_handle = nullptr;
+                    m_opengl_rc_handle = nullptr;
                 }
 
-                if ( m_window_dc )
+                if ( m_opengl_window_dc )
                 {
-                    ::ReleaseDC( m_window_handle, m_window_dc );
-                    m_window_dc = nullptr;
+                    ::ReleaseDC( m_window_handle, m_opengl_window_dc );
+                    m_opengl_window_dc = nullptr;
                 }
             }
 
             void window::commit_opengl()
             {
-                ::SwapBuffers( m_window_dc );
+                ::SwapBuffers( m_opengl_window_dc );
             }
 
             void window::enable_opengl_vsync()
