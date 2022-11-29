@@ -14,42 +14,45 @@
     #error "Do not include implementation header directly, use <rtl/sys/impl.hpp>"
 #endif
 
-#define ANSI_ONLY
-#define OEMRESOURCE
-#define STRICT
-#define WIN32_LEAN_AND_MEAN
-#define WIN32_EXTRA_LEAN
+#ifndef RTL_IMPL_DISABLE_WINDOWS_DEFS_FILTER
+    #define ANSI_ONLY
+    #define OEMRESOURCE
+    #define STRICT
+    #define WIN32_LEAN_AND_MEAN
+    #define WIN32_EXTRA_LEAN
 
-#define NO
-#define NOATOM
-#define NOCLIPBOARD
-#define NOCOLOR
-#define NOCOMM
-#define NOCTLMGR
-#define NODEFERWINDOWPOS
-#define NOGDICAPMASKS
-#define NOHELP
-#define NOICONS
-#define NOIMAGE
-#define NOIME
-#define NOKANJI
-#define NOKEYSTATES
-#define NOMB
-#define NOMCX
-#define NOMEMMGR
-#define NOMENUS
-#define NOMETAFILE
-#define NOMINMAX
-#define NOOPENFILE
-#define NOPROFILER
-#define NOPROXYSTUB
-#define NOSCROLL
-#define NOSERVICE
-#define NOSOUND
-#define NOSYSMETRICS
-#define NOTAPE
-#define NOWH
-#define NOWINRES
+    #define NO
+    #define NOATOM
+    #define NOCLIPBOARD
+    #define NOCOLOR
+    #define NOCOMM
+    #define NOCTLMGR
+    #define NODEFERWINDOWPOS
+    #define NOGDICAPMASKS
+    #define NOHELP
+    #define NOICONS
+    #define NOIMAGE
+    #define NOIME
+    #define NOKANJI
+    #define NOKEYSTATES
+    #define NOMB
+    #define NOMCX
+    #define NOMEMMGR
+    #define NOMENUS
+    #define NOMETAFILE
+    #define NOMINMAX
+    #define NOOPENFILE
+    #define NOPROFILER
+    #define NOPROXYSTUB
+    #define NOSCROLL
+    #define NOSERVICE
+    #define NOSOUND
+    #define NOSYSMETRICS
+    #define NOTAPE
+    #define NOWH
+    #define NOWINRES
+
+#endif
 
 #include <Windows.h>
 
