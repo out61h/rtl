@@ -17,15 +17,18 @@ using rtl::application;
 using rtl::random;
 using namespace rtl::keyboard;
 
-static application::params g_app_params{ 0 };
-static random<4096>        g_random;
+static random<4096> g_random;
 
 void main()
 {
     application::instance().run(
         L"noise",
-        g_app_params,
-        []( [[maybe_unused]] const application::input& input )
+        []( const application::environment&, application::params& params )
+        {
+            params.window = { 640, 480 };
+            return true;
+        },
+        []( const application::environment&, [[maybe_unused]] const application::input& input )
         {
             g_random.init( 0x1337c0de );
         },

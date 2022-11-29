@@ -2,7 +2,12 @@ project( noise LANGUAGES C CXX )
 
 add_executable( ${PROJECT_NAME} WIN32 noise.cpp)
 
-find_package(rtl REQUIRED)
+add_dependencies(${PROJECT_NAME} rtl)
+
+target_compile_features(${PROJECT_NAME} 
+    PRIVATE 
+        cxx_std_17
+)
 
 macro(RemoveDebugCXXFlag flag)
     string(REPLACE "${flag}" "" CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}")
@@ -24,6 +29,7 @@ target_compile_definitions(${PROJECT_NAME}
         RTL_ENABLE_APP_OSD=0
         RTL_ENABLE_APP_OPENGL=0
         RTL_ENABLE_APP_OPENGL_VSYNC=0
+        RTL_ENABLE_APP_RESET=0
         RTL_ENABLE_APP_RESIZE=0
         RTL_ENABLE_APP_RESOURCES=0
         RTL_ENABLE_APP_SCREEN_BUFFER=1
@@ -38,7 +44,10 @@ target_compile_definitions(${PROJECT_NAME}
         UNICODE
 )
 
-target_link_libraries(${PROJECT_NAME} rtl::rtl)
+target_include_directories(${PROJECT_NAME} 
+    PRIVATE
+        ${CMAKE_SOURCE_DIR}/include
+)
 
 if(MSVC)
     # MSVC compiler inserts call to memset when generates code.
