@@ -109,6 +109,12 @@ namespace rtl
             return type::from_value( value / div );
         }
 
+        [[nodiscard]] constexpr type operator%( int div ) const
+        {
+            const value_type divisor = div << fract_bits;
+            return type::from_value( value - ( value / divisor ) * divisor );
+        }
+
         [[nodiscard]] constexpr type operator-() const
         {
             return type::from_value( -value );
