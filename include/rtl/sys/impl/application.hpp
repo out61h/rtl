@@ -461,6 +461,10 @@ namespace rtl
                 if ( !::IsWindowVisible( window ) )
                     window = ::GetWindow( window, GW_HWNDPREV );
 
+                // Dialog box can has children message boxes
+                if ( HWND dialog = ::GetWindow( window, GW_ENABLEDPOPUP ) )
+                    window = dialog;
+
                 // Anyway, do not touch hidden windows
                 if ( ::IsWindowVisible( window ) )
                 {
