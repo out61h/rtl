@@ -236,7 +236,6 @@ namespace rtl
                 *dst++ = *src++;
 
             src = rhs.data();
-            dst = result.m_data.get() + size();
 
             for ( size_t i = 0; i < rhs.size(); ++i )
                 *dst++ = *src++;
@@ -333,4 +332,5 @@ namespace rtl
 
     wstring to_wstring( int value );
     wstring to_wstring( unsigned value );
+    wstring to_wstring( const rtl::string& string );
 } // namespace rtl

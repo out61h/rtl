@@ -34,4 +34,14 @@ namespace rtl
 
         return wstring( buffer );
     }
+
+    wstring to_wstring( const rtl::string& string )
+    {
+        rtl::vector<wchar_t> buffer( string.size() + 1 );
+
+        // TODO: Remove %S hack and use explicit conversion
+        wsprintf_s( buffer.data(), buffer.size(), "%S", string.c_str() );
+
+        return wstring( buffer.data() );
+    }
 } // namespace rtl
