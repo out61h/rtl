@@ -30,27 +30,60 @@ namespace rtl
 
             [[maybe_unused]] cl_int result;
 
-            size_t name_byte_count = 0;
-            result = ::clGetDeviceInfo( device_id, CL_DEVICE_NAME, 0, nullptr, &name_byte_count );
-            RTL_OPENCL_CHECK( result );
+            {
+                size_t name_byte_count = 0;
+                result
+                    = ::clGetDeviceInfo( device_id, CL_DEVICE_NAME, 0, nullptr, &name_byte_count );
+                RTL_OPENCL_CHECK( result );
 
-            m_name = string( name_byte_count, 0 );
+                m_name = string( name_byte_count - 1, 0 );
 
-            result = ::clGetDeviceInfo(
-                device_id, CL_DEVICE_NAME, m_name.size(), m_name.data(), nullptr );
-            RTL_OPENCL_CHECK( result );
+                result = ::clGetDeviceInfo(
+                    device_id, CL_DEVICE_NAME, name_byte_count, m_name.data(), nullptr );
+                RTL_OPENCL_CHECK( result );
+            }
+            {
+                size_t version_byte_count = 0;
 
-            size_t version_byte_count = 0;
+                result = ::clGetDeviceInfo(
+                    device_id, CL_DEVICE_VERSION, 0, nullptr, &version_byte_count );
+                RTL_OPENCL_CHECK( result );
 
-            result = ::clGetDeviceInfo(
-                device_id, CL_DEVICE_VERSION, 0, nullptr, &version_byte_count );
-            RTL_OPENCL_CHECK( result );
+                m_version = string( version_byte_count - 1, 0 );
 
-            m_version = string( version_byte_count, 0 );
+                result = ::clGetDeviceInfo(
+                    device_id, CL_DEVICE_VERSION, version_byte_count, m_version.data(), nullptr );
+                RTL_OPENCL_CHECK( result );
+            }
+            {
+                size_t extensions_byte_count = 0;
 
-            result = ::clGetDeviceInfo(
-                device_id, CL_DEVICE_VERSION, m_version.size(), m_version.data(), nullptr );
-            RTL_OPENCL_CHECK( result );
+                result = ::clGetDeviceInfo(
+                    device_id, CL_DEVICE_EXTENSIONS, 0, nullptr, &extensions_byte_count );
+                RTL_OPENCL_CHECK( result );
+
+                m_extensions = string( extensions_byte_count - 1, 0 );
+
+                result = ::clGetDeviceInfo( device_id,
+                                            CL_DEVICE_EXTENSIONS,
+                                            extensions_byte_count,
+                                            m_extensions.data(),
+                                            nullptr );
+                RTL_OPENCL_CHECK( result );
+            }
+            {
+                size_t vendor_byte_count = 0;
+
+                result = ::clGetDeviceInfo(
+                    device_id, CL_DEVICE_VENDOR, 0, nullptr, &vendor_byte_count );
+                RTL_OPENCL_CHECK( result );
+
+                m_vendor = string( vendor_byte_count, 0 );
+
+                result = ::clGetDeviceInfo(
+                    device_id, CL_DEVICE_VENDOR, m_vendor.size(), m_vendor.data(), nullptr );
+                RTL_OPENCL_CHECK( result );
+            }
         }
 
         device::device( device&& other )
@@ -67,6 +100,8 @@ namespace rtl
                 rtl::swap( m_id, other.m_id );
                 m_name = rtl::move( other.m_name );
                 m_version = rtl::move( other.m_version );
+                m_vendor = rtl::move( other.m_vendor );
+                m_extensions = rtl::move( other.m_extensions );
             }
 
             return *this;
@@ -135,6 +170,11 @@ namespace rtl
         [[nodiscard]] bool device::operator!=( const device& rhs ) const
         {
             return !operator==( rhs );
+        }
+
+        [[nodiscard]] bool device::extension_supported( rtl::string_view extension ) const
+        {
+            return m_extensions.find( extension ) != rtl::string::npos;
         }
 
     } // namespace opencl

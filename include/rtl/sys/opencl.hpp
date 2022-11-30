@@ -65,6 +65,18 @@ namespace rtl
                 return m_version;
             }
 
+            [[nodiscard]] const rtl::string& vendor() const
+            {
+                return m_vendor;
+            }
+
+            [[nodiscard]] const rtl::string& extensions() const
+            {
+                return m_extensions;
+            }
+
+            [[nodiscard]] bool extension_supported( rtl::string_view extension ) const;
+
             [[nodiscard]] bool operator==( const device& rhs ) const;
             [[nodiscard]] bool operator!=( const device& rhs ) const;
 
@@ -78,6 +90,8 @@ namespace rtl
             void*       m_id{ nullptr };
             rtl::string m_name;
             rtl::string m_version;
+            rtl::string m_vendor;
+            rtl::string m_extensions;
         };
 
         class buffer final
