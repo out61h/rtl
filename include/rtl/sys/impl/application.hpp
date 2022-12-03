@@ -15,6 +15,7 @@
 #endif
 
 #include <rtl/algorithm.hpp>
+#include <rtl/chrono.hpp>
 #include <rtl/limits.hpp>
 #include <rtl/memory.hpp>
 #include <rtl/sys/application.hpp>
@@ -343,8 +344,10 @@ namespace rtl
                 RTL_WINAPI_CHECK( result );
 
     #if RTL_ENABLE_APP_CLOCK
-                m_input.clock.thirds = static_cast<int32_t>( ::GetTickCount() )
-                                       * application::input::clock::measure / 1000;
+                m_input.clock.third_ticks
+                    = static_cast<signed>( ::GetTickCount() )
+                      * static_cast<signed>( chrono::thirds::period::den )
+                      / static_cast<signed>( chrono::milliseconds::period::den );
     #endif
 
     #if RTL_ENABLE_APP_RESIZE

@@ -45,7 +45,7 @@ namespace rtl
                                             CLIP_DEFAULT_PRECIS,
                                             DEFAULT_QUALITY,
                                             DEFAULT_PITCH | FF_DONTCARE,
-                                            NULL );
+                                            nullptr );
                 HGDIOBJ object = ::SelectObject( m_screen_buffer_dc, m_osd_font );
                 RTL_WINAPI_CHECK( object != nullptr );
                 RTL_ASSERT( ::GetObjectType( object ) == OBJ_FONT );

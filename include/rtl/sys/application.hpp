@@ -73,7 +73,13 @@ namespace rtl
 
         struct input
         {
-            void* window_handle; // CAUTION: it is better to NOT touch the V̪̪̟O͇̘̞I̝̞D͇͚͜!!!
+    #if RTL_ENABLE_APP_CLOCK
+            struct clock
+            {
+                // monotone counter of thirds (1/60 of second)
+                int32_t third_ticks;
+            } clock;
+    #endif
 
     #if RTL_ENABLE_APP_KEYS
             struct keys
@@ -81,17 +87,6 @@ namespace rtl
                 bool state[keyboard::keys::count];
                 bool pressed[keyboard::keys::count];
             } keys;
-    #endif
-
-    #if RTL_ENABLE_APP_CLOCK
-            struct clock
-            {
-                // thirds per second or seconds per minute
-                static constexpr auto measure = 60;
-
-                // monotone counter of thirds (1/60 of second)
-                int32_t thirds;
-            } clock;
     #endif
 
     #if RTL_ENABLE_APP_AUDIO
@@ -116,6 +111,8 @@ namespace rtl
                 size_t   pitch;
     #endif
             } screen;
+
+            void* window_handle; // CAUTION: it is better to NOT touch the V̪̪̟O͇̘̞I̝̞D͇͚͜!!!
         };
 
         struct output

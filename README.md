@@ -4,7 +4,7 @@ RTL is a very small (partial) substitution of the C++ standard runtime library w
 
 ## About the Project
 
-RTL is useful for making Windows native applications with extremely small size (several kilobytes) without other dependencies except WinAPI system libraries. It is implemented in header-only style. 
+RTL is useful for making Windows native applications with extremely small size (from several kilobytes) without any dependencies except WinAPI system libraries. It is implemented in header-only style. 
 
 ## TODO
 
