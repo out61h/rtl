@@ -34,7 +34,7 @@ namespace rtl
     } // namespace impl
 
     template<typename T>
-    typename impl::remove_reference<T>::type&& move( T&& r )
+    constexpr typename impl::remove_reference<T>::type&& move( T&& r )
     {
         return static_cast<typename impl::remove_reference<T>::type&&>( r );
     }

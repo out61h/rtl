@@ -28,6 +28,9 @@ namespace rtl
     typedef unsigned char      uint8_t;
     typedef char               int8_t;
 
+    static_assert( sizeof( unsigned ) == 4 );
+    static_assert( sizeof( unsigned long ) == 4 );
+
     static_assert( sizeof( uintmax_t ) == 8 );
     static_assert( sizeof( uint64_t ) == 8 );
     static_assert( sizeof( uint32_t ) == 4 );

@@ -53,6 +53,22 @@ namespace rtl
     };
 
     template<>
+    struct numeric_limits<unsigned long>
+    {
+        static constexpr unsigned min()
+        {
+            return 0;
+        }
+
+        static constexpr unsigned max()
+        {
+            return 4294967295;
+        }
+
+        static constexpr bool is_signed = false;
+    };
+
+    template<>
     struct numeric_limits<int16_t>
     {
         static constexpr int16_t min()
@@ -63,6 +79,22 @@ namespace rtl
         static constexpr int16_t max()
         {
             return 32767;
+        }
+
+        static constexpr bool is_signed = true;
+    };
+
+    template<>
+    struct numeric_limits<int64_t>
+    {
+        static constexpr int64_t min()
+        {
+            return -9223372036854775807 - 1;
+        }
+
+        static constexpr int64_t max()
+        {
+            return 9223372036854775807;
         }
 
         static constexpr bool is_signed = true;
