@@ -110,6 +110,24 @@ namespace rtl
         using type = T;
     };
 
+    template<typename T>
+    struct remove_reference
+    {
+        using type = T;
+    };
+
+    template<typename T>
+    struct remove_reference<T&>
+    {
+        using type = T;
+    };
+
+    template<typename T>
+    struct remove_reference<T&&>
+    {
+        using type = T;
+    };
+
     namespace impl
     {
         template<typename T>
@@ -166,24 +184,6 @@ namespace rtl
 
     template<typename T>
     struct remove_cv<const volatile T>
-    {
-        using type = T;
-    };
-
-    template<typename T>
-    struct remove_reference
-    {
-        using type = T;
-    };
-
-    template<typename T>
-    struct remove_reference<T&>
-    {
-        using type = T;
-    };
-
-    template<typename T>
-    struct remove_reference<T&&>
     {
         using type = T;
     };
