@@ -27,6 +27,11 @@ namespace rtl
             using period = Period;
             using rep = Rep;
 
+            constexpr static duration zero()
+            {
+                return duration();
+            }
+
             constexpr duration() = default;
             constexpr duration( const duration& ) = default;
             // cppcheck-suppress operatorEq
