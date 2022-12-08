@@ -24,6 +24,7 @@ namespace rtl
         constexpr vector()
             : m_size( 0 )
             , m_capacity( default_capacity )
+            // TODO: just allocate, do not construct?
             , m_data( new element_type[default_capacity] )
         {
         }
@@ -31,6 +32,7 @@ namespace rtl
         constexpr vector( size_t size, element_type&& value )
             : m_size( size )
             , m_capacity( rtl::max( size, default_capacity ) ) // TODO: do align?
+            // TODO: just allocate, do not construct?
             , m_data( new element_type[m_capacity] )
         {
             rtl::fill_n( m_data, m_size, value );
@@ -39,6 +41,7 @@ namespace rtl
         constexpr explicit vector( size_t size )
             : m_size( size )
             , m_capacity( rtl::max( size, default_capacity ) ) // TODO: do align?
+            // TODO: just allocate, do not construct?
             , m_data( new element_type[m_capacity] )
         {
             rtl::fill_n( m_data, m_size, element_type() );
@@ -64,6 +67,7 @@ namespace rtl
                     m_size = that.m_size;
                     m_capacity = that.m_capacity;
 
+                    // TODO: just allocate, do not construct?
                     element_type* new_data = new element_type[that.m_capacity];
                     delete[] m_data;
                     m_data = new_data;
@@ -184,6 +188,7 @@ namespace rtl
                 else
                     m_capacity = m_capacity * 2;
 
+                // TODO: just allocate, do not construct?
                 element_type* new_data = new element_type[m_capacity];
 
                 rtl::move_n( m_data, m_size, new_data );
@@ -203,6 +208,7 @@ namespace rtl
                 {
                     m_capacity = size; // TODO: do align?
 
+                    // TODO: just allocate, do not construct?
                     element_type* extended = new element_type[size];
 
                     rtl::move_n( m_data, m_size, extended );
@@ -224,6 +230,7 @@ namespace rtl
             {
                 m_capacity = capacity; // TODO: do align?
 
+                // TODO: just allocate, do not construct?
                 element_type* extended = new element_type[capacity];
 
                 rtl::move_n( m_data, m_size, extended );
