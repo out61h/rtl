@@ -162,6 +162,13 @@ namespace rtl
             *dst = 0;
         }
 
+        constexpr void clear()
+        {
+            m_data.reset( new value_type[1] );
+            m_size = 0;
+            m_data[m_size] = 0;
+        }
+
         [[nodiscard]] constexpr const value_type* data() const
         {
             return m_data.get();
@@ -315,6 +322,14 @@ namespace rtl
                     *dst++ = *src++;
             }
 
+            return *this;
+        }
+
+        constexpr basic_string& operator=( nullptr_t ) = delete;
+
+        constexpr basic_string& operator=( const basic_string_view<T>& view )
+        {
+            *this = basic_string( view );
             return *this;
         }
 
