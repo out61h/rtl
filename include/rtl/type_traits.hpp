@@ -22,12 +22,12 @@ namespace rtl
         using value_type = T;
         using type = integral_constant;
 
-        constexpr operator value_type() const noexcept
+        [[nodiscard]] constexpr operator value_type() const noexcept
         {
             return value;
         }
 
-        constexpr value_type operator()() const noexcept
+        [[nodiscard]] constexpr value_type operator()() const noexcept
         {
             return value;
         }
@@ -296,5 +296,15 @@ namespace rtl
 
     template<bool B, typename T = void>
     using enable_if_t = typename enable_if<B, T>::type;
+
+    template<class T>
+    struct is_lvalue_reference : false_type
+    {
+    };
+
+    template<class T>
+    struct is_lvalue_reference<T&> : true_type
+    {
+    };
 
 } // namespace rtl

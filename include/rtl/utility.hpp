@@ -15,8 +15,21 @@
 namespace rtl
 {
     template<typename T>
-    constexpr typename remove_reference<T>::type&& move( T&& r )
+    [[nodiscard]] constexpr typename remove_reference<T>::type&& move( T&& r )
     {
         return static_cast<typename remove_reference<T>::type&&>( r );
+    }
+
+    template<typename T>
+    [[nodiscard]] constexpr T&& forward( typename remove_reference<T>::type& r )
+    {
+        return static_cast<T&&>( r );
+    }
+
+    template<typename T>
+    [[nodiscard]] constexpr T&& forward( typename remove_reference<T>::type&& r )
+    {
+        static_assert( !is_lvalue_reference<T>::value, "attempt to forward rvalue as lvalue" );
+        return static_cast<T&&>( r );
     }
 } // namespace rtl

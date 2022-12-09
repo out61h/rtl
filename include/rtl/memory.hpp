@@ -314,5 +314,18 @@ namespace rtl
         deleter_type m_deleter;
     };
 
-    // TODO: make_unique
+    template<typename T, typename... Args>
+    [[nodiscard]] typename enable_if<!is_array<T>::value, unique_ptr<T>>::type
+    make_unique( Args&&... args )
+    {
+        return unique_ptr<T>( new T( forward<Args>( args )... ) );
+    }
+
+    template<typename T>
+    [[nodiscard]]
+    typename enable_if<is_same<T, typename remove_extent<T>::type[]>::value, unique_ptr<T>>::type
+    make_unique( size_t n )
+    {
+        return unique_ptr<T>( new typename remove_extent<T>::type[n]() );
+    }
 } // namespace rtl
