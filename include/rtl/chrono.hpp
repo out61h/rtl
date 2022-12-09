@@ -58,7 +58,7 @@ namespace rtl
             {
             }
 
-            constexpr rep count() const
+            [[nodiscard]] constexpr rep count() const
             {
                 return m_value;
             }
@@ -77,8 +77,8 @@ namespace rtl
         };
 
         template<typename Rep1, typename Period1, typename Rep2, typename Period2>
-        constexpr bool operator>=( const duration<Rep1, Period1>& lhs,
-                                   const duration<Rep2, Period2>& rhs )
+        [[nodiscard]] constexpr bool operator>=( const duration<Rep1, Period1>& lhs,
+                                                 const duration<Rep2, Period2>& rhs )
         {
             using type = common_type<duration<Rep1, Period1>, duration<Rep2, Period2>>::type;
 
@@ -89,8 +89,9 @@ namespace rtl
         }
 
         template<typename Rep1, typename Period1, typename Rep2, typename Period2>
-        constexpr typename common_type<duration<Rep1, Period1>, duration<Rep2, Period2>>::type
-        operator+( const duration<Rep1, Period1>& lhs, const duration<Rep2, Period2>& rhs )
+        [[nodiscard]] constexpr
+            typename common_type<duration<Rep1, Period1>, duration<Rep2, Period2>>::type
+            operator+( const duration<Rep1, Period1>& lhs, const duration<Rep2, Period2>& rhs )
         {
             using type = common_type<duration<Rep1, Period1>, duration<Rep2, Period2>>::type;
 
@@ -101,8 +102,9 @@ namespace rtl
         }
 
         template<typename Rep1, typename Period1, typename Rep2, typename Period2>
-        constexpr typename common_type<duration<Rep1, Period1>, duration<Rep2, Period2>>::type
-        operator-( const duration<Rep1, Period1>& lhs, const duration<Rep2, Period2>& rhs )
+        [[nodiscard]] constexpr
+            typename common_type<duration<Rep1, Period1>, duration<Rep2, Period2>>::type
+            operator-( const duration<Rep1, Period1>& lhs, const duration<Rep2, Period2>& rhs )
         {
             using type = common_type<duration<Rep1, Period1>, duration<Rep2, Period2>>::type;
 

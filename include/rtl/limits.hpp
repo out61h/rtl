@@ -23,12 +23,12 @@ namespace rtl
     template<>
     struct numeric_limits<int>
     {
-        static constexpr int min()
+        [[nodiscard]] static constexpr int min()
         {
             return -2147483647 - 1;
         }
 
-        static constexpr int max()
+        [[nodiscard]] static constexpr int max()
         {
             return 2147483647;
         }
@@ -39,12 +39,12 @@ namespace rtl
     template<>
     struct numeric_limits<unsigned>
     {
-        static constexpr unsigned min()
+        [[nodiscard]] static constexpr unsigned min()
         {
             return 0;
         }
 
-        static constexpr unsigned max()
+        [[nodiscard]] static constexpr unsigned max()
         {
             return 4294967295;
         }
@@ -55,12 +55,12 @@ namespace rtl
     template<>
     struct numeric_limits<unsigned long>
     {
-        static constexpr unsigned min()
+        [[nodiscard]] static constexpr unsigned min()
         {
             return 0;
         }
 
-        static constexpr unsigned max()
+        [[nodiscard]] static constexpr unsigned max()
         {
             return 4294967295;
         }
@@ -71,12 +71,12 @@ namespace rtl
     template<>
     struct numeric_limits<int16_t>
     {
-        static constexpr int16_t min()
+        [[nodiscard]] static constexpr int16_t min()
         {
             return -32768;
         }
 
-        static constexpr int16_t max()
+        [[nodiscard]] static constexpr int16_t max()
         {
             return 32767;
         }
@@ -87,12 +87,12 @@ namespace rtl
     template<>
     struct numeric_limits<int64_t>
     {
-        static constexpr int64_t min()
+        [[nodiscard]] static constexpr int64_t min()
         {
             return -9223372036854775807 - 1;
         }
 
-        static constexpr int64_t max()
+        [[nodiscard]] static constexpr int64_t max()
         {
             return 9223372036854775807;
         }

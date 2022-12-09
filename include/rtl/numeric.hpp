@@ -16,7 +16,7 @@
 namespace rtl
 {
     template<typename M, typename N>
-    constexpr common_type_t<M, N> gcd( M m, N n )
+    [[nodiscard]] constexpr common_type_t<M, N> gcd( M m, N n )
     {
         common_type_t<M, N> m_v = abs( m );
         common_type_t<M, N> n_v = abs( n );
@@ -31,7 +31,7 @@ namespace rtl
     }
 
     template<typename M, typename N>
-    constexpr common_type_t<M, N> lcm( M m, N n )
+    [[nodiscard]] constexpr common_type_t<M, N> lcm( M m, N n )
     {
         common_type_t<M, N> m_v = abs( m );
         common_type_t<M, N> n_v = abs( n );
@@ -40,7 +40,7 @@ namespace rtl
     }
 
     template<typename T>
-    constexpr int sign( T val )
+    [[nodiscard]] constexpr int sign( T val )
     {
         return ( T( 0 ) < val ) - ( val < T( 0 ) );
     }
