@@ -1,39 +1,38 @@
-cmake_minimum_required( VERSION 3.11 )
+cmake_minimum_required(VERSION 3.11)
 
-project( rtl VERSION 0.2.0 LANGUAGES C CXX )
+project(rtl VERSION 0.3.0 LANGUAGES C CXX)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG ${CMAKE_CURRENT_LIST_DIR}/bin)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE ${CMAKE_CURRENT_LIST_DIR}/bin)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_MINSIZEREL ${CMAKE_CURRENT_LIST_DIR}/bin)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINFO ${CMAKE_CURRENT_LIST_DIR}/bin)
 
-set( RTL_TARGET_NAME ${PROJECT_NAME} )
-set( RTL_TARGETS_EXPORT_NAME "${PROJECT_NAME}Targets" )
+set(RTL_TARGET_NAME ${PROJECT_NAME})
+set(RTL_TARGETS_EXPORT_NAME "${PROJECT_NAME}Targets")
 
-option(RTL_BUILD_EXAMPLES "Build examples" OFF)
+option(RTL_BUILD_EXAMPLES "Build examples" ON)
 
-if( RTL_BUILD_EXAMPLES )
-    add_subdirectory( examples )
+if(RTL_BUILD_EXAMPLES)
+    add_subdirectory(examples)
 endif()
 
-add_library( ${PROJECT_NAME} INTERFACE )
-add_library( ${PROJECT_NAME}::${RTL_TARGET_NAME} ALIAS ${RTL_TARGET_NAME} )
+add_library(${PROJECT_NAME} INTERFACE)
+add_library(${PROJECT_NAME}::${RTL_TARGET_NAME} ALIAS ${RTL_TARGET_NAME})
 
-include( GNUInstallDirs )
+include(GNUInstallDirs)
 
-target_include_directories( ${RTL_TARGET_NAME}
-#   SYSTEM
+target_include_directories(${RTL_TARGET_NAME}
     INTERFACE
         $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
         $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
 
-target_compile_features( ${RTL_TARGET_NAME} 
+target_compile_features(${RTL_TARGET_NAME} 
     INTERFACE 
         cxx_std_17
 )
 
-include( CMakePackageConfigHelpers )
+include(CMakePackageConfigHelpers)
 
 write_basic_package_version_file(
         ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake
@@ -47,7 +46,7 @@ configure_package_config_file(
         ${PROJECT_SOURCE_DIR}/cmake/${PROJECT_NAME}Config.cmake.in
         ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake
     INSTALL_DESTINATION
-        ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}
+        ${CMAKE_INSTALL_PREFIX}/cmake
 )
 
 install(
@@ -62,7 +61,7 @@ install(
         ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake
         ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake
     DESTINATION
-        ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}
+        ${CMAKE_INSTALL_PREFIX}/cmake
 )
 
 export(
@@ -95,6 +94,5 @@ install(
     NAMESPACE
         ${PROJECT_NAME}::
     DESTINATION
-        ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}
+        ${CMAKE_INSTALL_PREFIX}/cmake
 )
-

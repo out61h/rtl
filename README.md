@@ -2,7 +2,6 @@
 
 RTL is a very small (partial) substitution of the C++ standard runtime library with some additional features. 
 
-
 ## About the Project
 
 RTL is useful for making Windows native applications with extremely small size (from several kilobytes) without any dependencies except WinAPI system libraries. It is implemented in header-only style. 
@@ -21,3 +20,4 @@ RTL is useful for making Windows native applications with extremely small size (
 - [ ] Add optional "Retry, Ignore, Abort" loop to RTL_OPENCL_CHECK, RTL_WINAPI_CHECK, RTL_ASSERT, RTL_MM_WAVEOUT_CHECK
 - [ ] Implement lightweight release checks with the hash code of __FILE__ and __LINE__
 - [ ] Implement STL-like API for rtl::random
+```

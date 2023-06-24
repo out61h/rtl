@@ -37,7 +37,7 @@ namespace rtl
     [[nodiscard]] constexpr int pow_i( int base, int exponent )
     {
         if ( exponent < 0 )
-            return rtl::abs( base ) == 1 ? base : 0;
+            return abs( base ) == 1 ? base : 0;
 
         int result = 1;
 
