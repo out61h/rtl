@@ -128,5 +128,77 @@ namespace rtl
         using hours = duration<impl::duration_rep_type, ratio<3600>>;
         using days = duration<impl::duration_rep_type, ratio<86400>>;
         using weeks = duration<impl::duration_rep_type, ratio<604800>>;
+
+        template<typename Clock, typename Duration = Clock::duration>
+        class time_point final
+        {
+        public:
+            using clock = Clock;
+            using duration = Duration;
+            using period = typename Duration::period;
+            using rep = typename Duration::rep;
+
+            constexpr time_point() = default;
+
+            constexpr explicit time_point( const duration& d )
+                : m_duration( d )
+            {
+            }
+
+            template<typename Duration2>
+            constexpr time_point( const time_point<Clock, Duration2>& t )
+                : m_duration( t.m_duration )
+            {
+            }
+
+            constexpr duration time_since_epoch() const
+            {
+                return m_duration;
+            }
+
+        private:
+            duration m_duration;
+        };
+
+        template<typename Clock, typename Duration1, typename Rep2, typename Period2>
+        constexpr time_point<Clock, common_type_t<Duration1, duration<Rep2, Period2>>>
+        operator+( const time_point<Clock, Duration1>& pt, const duration<Rep2, Period2>& d );
+
+        template<typename Rep1, typename Period1, typename Clock, typename Duration2>
+        constexpr time_point<Clock, common_type_t<duration<Rep1, Period1>, Duration2>>
+        operator+( const duration<Rep1, Period1>& d, const time_point<Clock, Duration2>& pt );
+
+        template<typename Clock, typename Duration1, typename Rep2, typename Period2>
+        constexpr time_point<Clock, common_type_t<Duration1, duration<Rep2, Period2>>>
+        operator-( const time_point<Clock, Duration1>& pt, const duration<Rep2, Period2>& d );
+
+        template<typename Clock, typename Duration1, typename Duration2>
+        constexpr common_type_t<Duration1, Duration2>
+        operator-( const time_point<Clock, Duration1>& lhs,
+                   const time_point<Clock, Duration2>& rhs )
+        {
+            using type = common_type_t<Duration1, Duration2>;
+
+            const type lhs_v( lhs.time_since_epoch() );
+            const type rhs_v( rhs.time_since_epoch() );
+
+            return type( lhs_v.count() - rhs_v.count() );
+        }
+
+#if RTL_ENABLE_CHRONO_CLOCK
+        class steady_clock final
+        {
+        public:
+            using duration = microseconds;
+            using period = duration::period;
+            using rep = duration::rep;
+            using time_point = time_point<steady_clock>;
+
+            constexpr static bool is_steady = true;
+
+            static time_point now();
+        };
+#endif
+
     } // namespace chrono
 } // namespace rtl

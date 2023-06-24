@@ -13,6 +13,7 @@
 #define RTL_IMPLEMENTATION
 
 #include "impl/application.hpp"
+#include "impl/chrono.hpp"
 #include "impl/debug.hpp"
 #include "impl/filesystem.hpp"
 #include "impl/memory.hpp"

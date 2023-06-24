@@ -4,9 +4,9 @@
  *
  * This file is part of the RTL library. Redistribution and use in source and
  * binary forms, with or without modification, are permitted exclusively
- * under the terms of the MIT license. You should have received a copy of the 
+ * under the terms of the MIT license. You should have received a copy of the
  * license with this file. If not, please visit:
- * https://github.com/out61h/rtl/blob/main/LICENSE. 
+ * https://github.com/out61h/rtl/blob/main/LICENSE.
  */
 #pragma once
 
@@ -14,7 +14,9 @@
     #error "Do not include implementation header directly, use <rtl/sys/impl.hpp>"
 #endif
 
+#include "chrono.hpp"
 #include "heap.hpp"
+#include "memory.hpp"
 #include "tests.hpp"
 #include "win.hpp"
 
@@ -29,6 +31,10 @@ extern void main( void );
 
 extern "C" void __stdcall rtl_entry_point( void )
 {
+#if RTL_ENABLE_CHRONO_CLOCK
+    rtl::impl::g_performance_counter.init();
+#endif
+
 #if RTL_ENABLE_HEAP
     rtl::impl::g_heap.init();
 #endif
