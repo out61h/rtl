@@ -64,12 +64,12 @@ void operator delete( void* p, size_t )
     return rtl::impl::g_heap.calloc( count, 1 );
 }
 
-void operator delete[]( void* p ) noexcept
+void operator delete[]( void* p )
 {
     rtl::impl::g_heap.free( p );
 }
 
-void operator delete[]( void* p, size_t ) noexcept
+void operator delete[]( void* p, size_t )
 {
     rtl::impl::g_heap.free( p );
 }
