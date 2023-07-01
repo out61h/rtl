@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2022 Konstantin Polevik
+ * Copyright (C) 2016-2023 Konstantin Polevik
  * All rights reserved
  *
  * This file is part of the RTL library. Redistribution and use in source and
