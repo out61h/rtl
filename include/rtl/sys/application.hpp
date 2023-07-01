@@ -29,7 +29,7 @@ namespace rtl
         {
             void* window_handle; // CAUTION: it is better to NOT touch the V̪̪̟O͇̘̞I̝̞D͇͚͜!!!
 
-    #if RTL_ENABLE_APP_AUDIO
+    #if RTL_ENABLE_APP_AUDIO_OUTPUT 
             // NOTE: Used by audio module to calculate the size of the audio frame buffer
             // TODO: Add support of multimonitor systems with different framerates
             struct display
@@ -54,7 +54,7 @@ namespace rtl
         {
             void* void_param; // CAUTION: it is better to NOT touch the V̪̪̟O͇̘̞I̝̞D͇͚͜!!!
 
-    #if RTL_ENABLE_APP_AUDIO
+    #if RTL_ENABLE_APP_AUDIO_OUTPUT
             struct audio
             {
                 size_t samples_per_second;
@@ -89,7 +89,7 @@ namespace rtl
             } keys;
     #endif
 
-    #if RTL_ENABLE_APP_AUDIO
+    #if RTL_ENABLE_APP_AUDIO_OUTPUT
             struct audio
             {
                 static constexpr size_t channel_count = 2;

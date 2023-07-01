@@ -18,7 +18,7 @@
 #include <rtl/sys/impl/win.hpp>
 
 #if RTL_ENABLE_APP
-    #if RTL_ENABLE_APP_AUDIO
+    #if RTL_ENABLE_APP_AUDIO_OUTPUT
         #if RTL_ENABLE_RUNTIME_CHECKS
             #define RTL_MM_WAVEOUT_CHECK( code ) \
                 rtl::impl::win::check_mm_waveout( code, __FILE__, __LINE__ )
@@ -167,7 +167,13 @@ namespace rtl
                 {
                 case WOM_DONE:
                 {
-                    // TODO: detect buffer underrun and perforam device restart
+                    // XXX: also whern reset
+
+                    // RTL_APP_AUDIO_STATS
+                    // XXX: sample buffers counts
+                    // XXX: detect if no buffers left == underrun
+
+                    // XXX: perform device restart
                     [[maybe_unused]] WAVEHDR* header = reinterpret_cast<WAVEHDR*>( param1 );
                     RTL_ASSERT( header->dwFlags & WHDR_DONE );
                     break;
@@ -217,16 +223,19 @@ namespace rtl
                 }
                 else
                 {
-                    // TODO: timeout with frame duration and detect buffer overrun after that?
+                    // XXX: log wait time (SUMM, N)
+
+                    // XXX: timeout with frame duration and detect buffer overrun after that?
                     for ( ;; )
                     {
-                        // TODO: really need this?
+                        // XXX: really need this?
                         // 20-90 CPU cycles
                         ::MemoryBarrier();
 
                         if ( header->dwFlags & WHDR_DONE )
                             break;
 
+                        // XXX: ????
                         ::_mm_pause();
                     }
                 }

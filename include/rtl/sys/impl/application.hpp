@@ -63,7 +63,7 @@ namespace rtl
                 void set_fullscreen_mode( bool fullscreen );
     #endif
 
-    #if RTL_ENABLE_APP_AUDIO
+    #if RTL_ENABLE_APP_AUDIO_OUTPUT
                 void create_audio();
                 void commit_audio();
                 void restart_audio();
@@ -91,7 +91,7 @@ namespace rtl
                 static constexpr int  minimal_height = 400;
                 static constexpr bool is_fullscreen = RTL_ENABLE_APP_FULLSCREEN;
                 static constexpr bool is_resizable = RTL_ENABLE_APP_RESIZE;
-                static constexpr bool has_cursor = RTL_ENABLE_APP_CURSOR;
+                static constexpr bool has_cursor = !RTL_ENABLE_APP_CURSOR_HIDDEN;
 
                 static constexpr DWORD fullscreen_style = WS_POPUP;
                 static constexpr DWORD resizable_style = WS_OVERLAPPEDWINDOW;
@@ -124,7 +124,7 @@ namespace rtl
                 WINDOWPLACEMENT m_resize_placement{ 0 };
     #endif
 
-    #if RTL_ENABLE_APP_AUDIO
+    #if RTL_ENABLE_APP_AUDIO_OUTPUT
                 // NOTE: can't use \unique_ptr here because the \window class must have a trivial
                 // constructor
                 audio* m_audio{ nullptr };
@@ -270,7 +270,7 @@ namespace rtl
     #endif
                 create_resizable_components( false );
 
-    #if RTL_ENABLE_APP_AUDIO
+    #if RTL_ENABLE_APP_AUDIO_OUTPUT
                 create_audio();
     #endif
                 ::ShowWindow( m_window_handle, SW_SHOW );
@@ -325,7 +325,7 @@ namespace rtl
 
                 destroy_resizable_components( false );
 
-    #if RTL_ENABLE_APP_AUDIO
+    #if RTL_ENABLE_APP_AUDIO_OUTPUT
                 destroy_audio();
     #endif
 
@@ -355,7 +355,7 @@ namespace rtl
                 {
                     destroy_resizable_components( true );
                     create_resizable_components( true );
-        #if RTL_ENABLE_APP_AUDIO
+        #if RTL_ENABLE_APP_AUDIO_OUTPUT
                     restart_audio();
         #endif
                     if ( on_init )
@@ -396,7 +396,7 @@ namespace rtl
         #endif
                         if ( on_setup( m_environment, m_params ) )
                         {
-        #if RTL_ENABLE_APP_AUDIO
+        #if RTL_ENABLE_APP_AUDIO_OUTPUT
                             destroy_audio();
                             create_audio();
         #endif
@@ -427,7 +427,7 @@ namespace rtl
     #elif RTL_ENABLE_APP_OPENGL
                     commit_opengl();
     #endif
-    #if RTL_ENABLE_APP_AUDIO
+    #if RTL_ENABLE_APP_AUDIO_OUTPUT
                     commit_audio();
     #endif
                     break;

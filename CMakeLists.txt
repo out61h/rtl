@@ -24,9 +24,9 @@ target_compile_features(${RTL_TARGET_NAME} INTERFACE cxx_std_17)
 target_compile_definitions(${PROJECT_NAME} 
     INTERFACE
         RTL_ENABLE_APP=$<BOOL:$<TARGET_PROPERTY:RTL_ENABLE_APP>>
-        RTL_ENABLE_APP_AUDIO=$<BOOL:$<TARGET_PROPERTY:RTL_ENABLE_APP_AUDIO>>
+        RTL_ENABLE_APP_AUDIO_OUTPUT=$<BOOL:$<TARGET_PROPERTY:RTL_ENABLE_APP_AUDIO_OUTPUT>>
         RTL_ENABLE_APP_CLOCK=$<BOOL:$<TARGET_PROPERTY:RTL_ENABLE_APP_CLOCK>>
-        RTL_ENABLE_APP_CURSOR=$<BOOL:$<TARGET_PROPERTY:RTL_ENABLE_APP_CURSOR>>
+        RTL_ENABLE_APP_CURSOR_HIDDEN=$<BOOL:$<TARGET_PROPERTY:RTL_ENABLE_APP_CURSOR_HIDDEN>>
         RTL_ENABLE_APP_FULLSCREEN=$<BOOL:$<TARGET_PROPERTY:RTL_ENABLE_APP_FULLSCREEN>>
         RTL_ENABLE_APP_KEYS=$<BOOL:$<TARGET_PROPERTY:RTL_ENABLE_APP_KEYS>>
         RTL_ENABLE_APP_OPENGL=$<BOOL:$<TARGET_PROPERTY:RTL_ENABLE_APP_OPENGL>>
@@ -90,7 +90,13 @@ if(MSVC)
     # Can't define your own version of the memset without dislabling whole program optimization.
     # So we link our program with VC runtime (statically) and linker will see memset implementation.
     # set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
-    target_link_libraries(${RTL_TARGET_NAME} INTERFACE libvcruntime libcmt)
+    target_link_libraries(${RTL_TARGET_NAME}
+        INTERFACE
+            libvcruntime
+            libcmt
+            $<$<BOOL:$<TARGET_PROPERTY:RTL_ENABLE_APP_AUDIO_OUTPUT>>:winmm>
+            $<$<BOOL:$<TARGET_PROPERTY:RTL_ENABLE_APP_OPENGL>>:opengl32>
+    )
 
     ################################################################################################
     # Typical segment names

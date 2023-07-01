@@ -62,7 +62,7 @@
     #define RTL_WINAPI_CHECK( condition )
 #endif
 
-#if RTL_ENABLE_APP_AUDIO
+#if RTL_ENABLE_APP_AUDIO_OUTPUT
     #define MMNODRV
     #define MMNOSOUND
     #define MMNOMIDI

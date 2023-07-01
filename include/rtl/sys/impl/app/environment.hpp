@@ -26,7 +26,7 @@ namespace rtl
         {
             void window::init_environment()
             {
-    #if RTL_ENABLE_APP_AUDIO
+    #if RTL_ENABLE_APP_AUDIO_OUTPUT
                 DEVMODEA mode;
 
                 [[maybe_unused]] BOOL result

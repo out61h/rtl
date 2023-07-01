@@ -92,7 +92,7 @@ namespace rtl
                     return 0;
                 }
 
-        #if RTL_ENABLE_APP_AUDIO
+        #if RTL_ENABLE_APP_AUDIO_OUTPUT
 
                 case WM_ENTERSIZEMOVE:
                 {

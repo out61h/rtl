@@ -15,7 +15,7 @@
 #endif
 
 #if RTL_ENABLE_APP
-    #if RTL_ENABLE_APP_AUDIO
+    #if RTL_ENABLE_APP_AUDIO_OUTPUT
 
         #include <rtl/int.hpp>
         #include <rtl/sys/impl/win.hpp>
@@ -54,7 +54,7 @@ namespace rtl
             };
         } // namespace win
 
-    } // namespace impl
+    }     // namespace impl
 } // namespace rtl
 
     #endif

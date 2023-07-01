@@ -25,7 +25,8 @@ void main()
         L"noise",
         []( const application::environment&, application::params& params )
         {
-            params.window = { 640, 480 };
+            params.window = { 320, 240 };
+            params.audio = { 48000, 24000 };
             return true;
         },
         []( const application::environment&, [[maybe_unused]] const application::input& input )
@@ -54,6 +55,14 @@ void main()
                 }
 
                 line += input.screen.pitch;
+            }
+
+            auto* samples = input.audio.frame;
+
+            for ( rtl::size_t i = 0; i < input.audio.samples_per_frame * input.audio.channel_count;
+                  ++i )
+            {
+                *samples++ = static_cast<rtl::int16_t>( g_random.rand() ) >> 8;
             }
 
             return application::action::none;
