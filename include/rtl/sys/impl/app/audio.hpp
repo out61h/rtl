@@ -57,21 +57,21 @@ namespace rtl
             {
                 delete m_audio;
                 m_audio = nullptr;
-                m_input.audio.frame = nullptr;
+                m_input.audio.output_frame_pointer = nullptr;
             }
 
             void window::commit_audio()
             {
                 if ( m_audio )
-                    m_input.audio.frame = m_audio->commit();
+                    m_input.audio.output_frame_pointer = m_audio->commit();
             }
 
             void window::restart_audio()
             {
                 if ( m_audio )
-                    m_input.audio.frame = m_audio->start();
+                    m_input.audio.output_frame_pointer = m_audio->start();
                 else
-                    m_input.audio.frame = nullptr;
+                    m_input.audio.output_frame_pointer = nullptr;
             }
 
         #if RTL_ENABLE_RUNTIME_CHECKS
@@ -96,7 +96,7 @@ namespace rtl
                 RTL_ASSERT( samples_per_frame > 0 );
                 RTL_ASSERT( frames_per_buffer > 1 );
 
-                constexpr size_t channels_count = application::input::audio::channel_count;
+                constexpr size_t channels_count = Application::Input::Audio::channel_count;
 
                 m_wave_format.wFormatTag = WAVE_FORMAT_PCM;
                 m_wave_format.nChannels = channels_count;
@@ -245,7 +245,7 @@ namespace rtl
 
         } // namespace win
 
-    } // namespace impl
+    }     // namespace impl
 } // namespace rtl
 
     #endif

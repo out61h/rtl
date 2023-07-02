@@ -17,173 +17,307 @@
 
 namespace rtl
 {
-    // TODO: Remove padding placeholders of void* type
-    class application final
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    /// Application.
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    class Application final
     {
     public:
     #if RTL_ENABLE_APP_RESOURCES
-        class resource;
+        class Resource;
     #endif
 
-        struct environment
+        ////////////////////////////////////////////////////////////////////////////////////////////
+        /// @brief Application environment.
+        /// Hardware and OS parameters, embedded resources, etc.
+        ////////////////////////////////////////////////////////////////////////////////////////////
+        struct Environment
         {
-            void* window_handle; // CAUTION: it is better to NOT touch the V̪̪̟O͇̘̞I̝̞D͇͚͜!!!
-
-    #if RTL_ENABLE_APP_AUDIO_OUTPUT 
-            // NOTE: Used by audio module to calculate the size of the audio frame buffer
-            // TODO: Add support of multimonitor systems with different framerates
-            struct display
-            {
-                unsigned framerate;
-            } display;
-    #endif
-
-    #if RTL_ENABLE_APP_RESOURCES
-            struct resources
-            {
-                void* void_resource; // CAUTION: it is better to NOT touch the V̪̪̟O͇̘̞I̝̞D͇͚͜!!!
-
-                resource open( int type, int id ) const;
-
-                // TODO: Implement resource iterator
-            } resources;
-    #endif
-        };
-
-        struct params
-        {
-            void* void_param; // CAUTION: it is better to NOT touch the V̪̪̟O͇̘̞I̝̞D͇͚͜!!!
-
     #if RTL_ENABLE_APP_AUDIO_OUTPUT
-            struct audio
+            /// @brief Display settings.
+            /// Used by the audio module to calculate the audio frame buffer size.
+            /// @todo: Add support for systems with multiple monitors with different frame rates.
+            /// @todo: Use a more precise frame rate value.
+            struct Display
             {
-                size_t samples_per_second;
-                size_t max_latency_samples;
-            } audio;
+                /// Monitor or adapter frame rate.
+                unsigned framerate;
+            }
+            /// Display settings.
+            display;
     #endif
+    #if RTL_ENABLE_APP_RESOURCES
+            /// @brief Application resources.
+            /// Provides access to in-app resources.
+            /// @todo: Implement a resource iterator.
+            struct Resources
+            {
+                /// Placeholder to avoid voidness of the structure.
+                void* placeholder; // CAUTION: it is better NOT to touch the V̪̪̟O͇̘̞I̝̞D͇͚͜!!!
 
-    #if RTL_ENABLE_APP_RESIZE || !RTL_ENABLE_APP_FULLSCREEN
-            struct window
-            {
-                int width;
-                int height;
-            } window;
+                /// @brief Opens resource.
+                /// @param type Resource type.
+                /// @param id Resource identifier.
+                /// @return Opened resource.
+                Resource open( int type, int id ) const;
+            }
+            /// Application resources.
+            resources;
     #endif
+            /// Handle to the application's main window.
+            void* window_handle; // CAUTION: it is better NOT to touch the V̪̪̟O͇̘̞I̝̞D͇͚͜!!!
         };
 
-        struct input
+        ////////////////////////////////////////////////////////////////////////////////////////////
+        /// Application initialization parameters.
+        ////////////////////////////////////////////////////////////////////////////////////////////
+        struct Params
+        {
+    #if RTL_ENABLE_APP_AUDIO_OUTPUT
+            /// Audio initialization parameters.
+            struct Audio
+            {
+                /// Sampling frequency.
+                size_t samples_per_second;
+                /// The maximum latency of the input and output buffers.
+                size_t max_latency_samples;
+            }
+            /// Audio parameters.
+            audio;
+    #endif
+    #if RTL_ENABLE_APP_RESIZE || !RTL_ENABLE_APP_FULLSCREEN
+            /// Window initialization parameters.
+            struct Window
+            {
+                /// The client area width, in pixels.
+                int width;
+                /// The client area height, in pixels.
+                int height;
+            }
+            /// Main window parameters.
+            window;
+    #endif
+            /// Placeholder to avoid voidness of the structure.
+            void* placeholder; // CAUTION: it is better NOT to touch the V̪̪̟O͇̘̞I̝̞D͇͚͜!!!
+        };
+
+        ////////////////////////////////////////////////////////////////////////////////////////////
+        /// Context of input events and immutable output data.
+        ////////////////////////////////////////////////////////////////////////////////////////////
+        struct Input
         {
     #if RTL_ENABLE_APP_CLOCK
-            struct clock
+            /// Clock.
+            struct Clock
             {
-                // monotone counter of thirds (1/60 of second)
+                /// Monotone counter of thirds (1/60th of second).
+                /// @todo Just use frame counter?
                 int32_t third_ticks;
             } clock;
     #endif
 
     #if RTL_ENABLE_APP_KEYS
-            struct keys
+            /// Key state.
+            struct Keys
             {
-                bool state[keyboard::keys::count];
-                bool pressed[keyboard::keys::count];
-            } keys;
+                /// @brief Key state.
+                /// true if the key is in the pressed state.
+                bool state[keyboard::Keys::count];
+
+                /// @brief Key pressed event.
+                /// true if the key was just pressed.
+                bool pressed[keyboard::Keys::count];
+            }
+            /// Key state.
+            keys;
     #endif
 
     #if RTL_ENABLE_APP_AUDIO_OUTPUT
-            struct audio
+            /// Immutable audio data.
+            struct Audio
             {
+                /// Number of channels.
                 static constexpr size_t channel_count = 2;
 
+                /// Sampling frequency.
                 size_t samples_per_second;
+
+                /// @brief Number of samples per frame.
+                /// For one channel.
                 size_t samples_per_frame;
 
-                int16_t* frame;
-            } audio;
+                /// Pointer to the audio output buffer.
+                int16_t* output_frame_pointer;
+            }
+            /// Audio data.
+            audio;
     #endif
 
-            struct screen
+            /// Immutable screen data.
+            struct Screen
             {
+                /// Width of the client area width of the main window in pixels.
                 int width;
+
+                /// Height of the client area width of the main window in pixels.
                 int height;
 
     #if RTL_ENABLE_APP_SCREEN_BUFFER
-                uint8_t* pixels;
-                size_t   pitch;
+                /// Pointer to the pixels buffer of the main window.
+                uint8_t* pixels_buffer_pointer;
+                /// Size of the pixel line in bytes.
+                size_t pixels_buffer_pitch;
     #endif
-            } screen;
+            }
+            /// Screen data.
+            screen;
 
-            void* window_handle; // CAUTION: it is better to NOT touch the V̪̪̟O͇̘̞I̝̞D͇͚͜!!!
+            /// Opaque handle of the main window.
+            void* window_handle; // CAUTION: it is better NOT to touch the V̪̪̟O͇̘̞I̝̞D͇͚͜!!!
         };
 
-        struct output
+        ////////////////////////////////////////////////////////////////////////////////////////////
+        /// Mutable output data.
+        ////////////////////////////////////////////////////////////////////////////////////////////
+        struct Output
         {
-            void* void_sink; // CAUTION: it is better to NOT touch the V̪̪̟O͇̘̞I̝̞D͇͚͜!!!
-
     #if RTL_ENABLE_APP_SCREEN_BUFFER
         #if RTL_ENABLE_APP_OSD
-            struct osd
+            /// On-screen display data.
+            struct OSD
             {
+                /// Maximum text length including null terminating character.
                 static constexpr auto text_length = 256;
+
+                /// Margins of text from edges of the the window (in pixels).
                 static constexpr auto margin = 12;
+
+                /// Font size in logical units for a 1280 pixels wide screen.
                 static constexpr auto font_size = 24;
 
-                enum class location
+                /// Text location.
+                enum class Location
                 {
+                    /// In the top left corner.
                     top_left,
+                    /// In the top right corner.
                     top_right,
+                    /// In the bottom left corner.
                     bottom_left,
+                    /// In the bottom right corner.
                     bottom_right,
+                    /// Number of locations.
                     count
                 };
 
-                wchar_t text[(size_t)location::count][text_length];
-            } osd;
+                /// The text to display.
+                wchar_t text[(size_t)Location::count][text_length];
+            }
+            /// On-screen display data.
+            osd;
         #endif
     #endif
+            /// Placeholder to avoid voidness of the structure.
+            void* placeholder; // CAUTION: it is better NOT to touch the V̪̪̟O͇̘̞I̝̞D͇͚͜!!!
         };
 
-        enum class action
+        ////////////////////////////////////////////////////////////////////////////////////////////
+        /// Application action.
+        ////////////////////////////////////////////////////////////////////////////////////////////
+        enum class Action
         {
+            /// Do nothing.
             none,
+            /// Wait for next input event.
+            wait,
+            /// Close application.
             close,
     #if RTL_ENABLE_APP_RESET
+            /// Re-initialize the application.
             reset,
     #endif
     #if RTL_ENABLE_APP_RESIZE
+            /// Switch the application window to full screen mode.
             toggle_fullscreen,
     #endif
         };
 
     #if RTL_ENABLE_APP_RESOURCES
-        class resource final
+        ////////////////////////////////////////////////////////////////////////////////////////////
+        /// In-app resource.
+        ////////////////////////////////////////////////////////////////////////////////////////////
+        class Resource final
         {
         public:
-            resource() = default;
-            ~resource() = default;
+            Resource() = default;
+            ~Resource() = default;
 
+            /// @brief Checking if the resource exists.
+            /// @return true, if the resource exists and the data is not null.
             operator bool() const;
 
-            size_t      size() const;
+            /// @brief Resource size.
+            /// @return Resource size in bytes.
+            size_t size() const;
+
+            /// @brief Resource data.
+            /// @return Pointer to the memory location where the resource located.
             const void* data() const;
 
         private:
-            friend struct environment::resources;
+            friend struct Environment::Resources;
 
-            resource( void* data, size_t size );
+            Resource( void* data, size_t size );
 
             void*  m_data{ nullptr };
             size_t m_size{ 0 };
         };
     #endif
 
-        using setup_function = bool( const environment&, params& );
-        using init_function = void( const environment&, const input& );
-        using update_function = action( const input&, output& );
+        ////////////////////////////////////////////////////////////////////////////////////////////
+        /// @brief Setup callback.
+        /// Called once before the application window will be created.
+        /// @param env Application environment.
+        /// @param params Parameters to set.
+        /// @return true, if the application should proceed to initialization.
+        /// @return false, if the application should be terminated.
+        ////////////////////////////////////////////////////////////////////////////////////////////
+        using setup_function = bool( const Environment& env, Params& params );
+
+        ////////////////////////////////////////////////////////////////////////////////////////////
+        /// @brief Initialization callback.
+        /// Called once after the application window was created.
+        /// @param env Application environment.
+        /// @param input Current state of the input context.
+        ////////////////////////////////////////////////////////////////////////////////////////////
+        using init_function = void( const Environment& env, const Input& input );
+
+        ////////////////////////////////////////////////////////////////////////////////////////////
+        /// @brief Update callback.
+        /// Called at the start of every frame or after an input event.
+        /// @param input Input context.
+        /// @param output Output context.
+        /// @return The action that the application should take.
+        ////////////////////////////////////////////////////////////////////////////////////////////
+        using update_function = Action( const Input& input, Output& output );
+
+        ////////////////////////////////////////////////////////////////////////////////////////////
+        /// @brief Termination callback.
+        /// Called once when the application closes.
+        ////////////////////////////////////////////////////////////////////////////////////////////
         using terminate_function = void();
 
     public:
-        static application& instance();
+        /// @brief Application singleton accessor.
+        /// @return Current instance of application.
+        static Application& instance();
 
+        /// @brief Run application.
+        /// @param app_name Application name (displayed in the titlebar of the main window).
+        /// @param on_setup Setup callback function. May be nullptr.
+        /// @param on_init Init callback function. May be nullptr.
+        /// @param on_update Update callback function. May be nullptr.
+        /// @param on_terminate Terminate callback function. May be nullptr.
         void run( const wchar_t*      app_name,
                   setup_function*     on_setup,
                   init_function*      on_init,
@@ -191,13 +325,13 @@ namespace rtl
                   terminate_function* on_terminate );
 
     private:
-        application() = default;
+        Application() = default;
 
-        application( const application& ) = delete;
-        application& operator=( const application& ) = delete;
+        Application( const Application& ) = delete;
+        Application& operator=( const Application& ) = delete;
 
-        application( application&& ) = delete;
-        application& operator=( application&& ) = delete;
+        Application( Application&& ) = delete;
+        Application& operator=( Application&& ) = delete;
     };
 } // namespace rtl
 

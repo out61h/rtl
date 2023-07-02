@@ -13,7 +13,7 @@
 #include <rtl/random.hpp>
 #include <rtl/sys/application.hpp>
 
-using rtl::application;
+using rtl::Application;
 using rtl::random;
 using namespace rtl::keyboard;
 
@@ -21,25 +21,25 @@ static random<4096> g_random;
 
 void main()
 {
-    application::instance().run(
-        L"noise",
-        []( const application::environment&, application::params& params )
+    Application::instance().run(
+        L"N O I S E",
+        []( const Application::Environment&, Application::Params& params )
         {
-            params.window = { 320, 240 };
+            params.window = { 640, 480 };
             params.audio = { 48000, 24000 };
             return true;
         },
-        []( const application::environment&, [[maybe_unused]] const application::input& input )
+        []( const Application::Environment&, [[maybe_unused]] const Application::Input& input )
         {
             g_random.init( 0x1337c0de );
         },
-        []( [[maybe_unused]] const application::input& input,
-            [[maybe_unused]] application::output&      output )
+        []( [[maybe_unused]] const Application::Input& input,
+            [[maybe_unused]] Application::Output&      output )
         {
-            if ( input.keys.pressed[keys::escape] )
-                return application::action::close;
+            if ( input.keys.pressed[Keys::escape] )
+                return Application::Action::close;
 
-            auto* line = input.screen.pixels;
+            auto* line = input.screen.pixels_buffer_pointer;
 
             for ( int i = 0; i < input.screen.height; ++i )
             {
@@ -54,10 +54,10 @@ void main()
                     *pixel++ = pix;
                 }
 
-                line += input.screen.pitch;
+                line += input.screen.pixels_buffer_pitch;
             }
 
-            auto* samples = input.audio.frame;
+            auto* samples = input.audio.output_frame_pointer;
 
             for ( rtl::size_t i = 0; i < input.audio.samples_per_frame * input.audio.channel_count;
                   ++i )
@@ -65,7 +65,7 @@ void main()
                 *samples++ = static_cast<rtl::int16_t>( g_random.rand() ) >> 8;
             }
 
-            return application::action::none;
+            return Application::Action::wait;
         },
         nullptr );
 }

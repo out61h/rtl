@@ -50,19 +50,20 @@ namespace rtl
 
                 RTL_ASSERT( m_screen_buffer_bitmap_handle == nullptr );
 
-                m_screen_buffer_bitmap_handle
-                    = ::CreateDIBSection( m_screen_buffer_dc,
-                                          &m_screen_buffer_bitmap_info,
-                                          DIB_RGB_COLORS,
-                                          reinterpret_cast<void**>( &m_input.screen.pixels ),
-                                          nullptr,
-                                          0 );
+                m_screen_buffer_bitmap_handle = ::CreateDIBSection(
+                    m_screen_buffer_dc,
+                    &m_screen_buffer_bitmap_info,
+                    DIB_RGB_COLORS,
+                    reinterpret_cast<void**>( &m_input.screen.pixels_buffer_pointer ),
+                    nullptr,
+                    0 );
                 RTL_WINAPI_CHECK( m_screen_buffer_bitmap_handle != nullptr );
 
                 constexpr size_t sizeof_rgb = 3;
                 constexpr size_t align = sizeof( LONG );
 
-                m_input.screen.pitch = ( ( ( sizeof_rgb * width ) + align - 1 ) / align ) * align;
+                m_input.screen.pixels_buffer_pitch
+                    = ( ( ( sizeof_rgb * width ) + align - 1 ) / align ) * align;
             }
 
             void window::draw_screen_buffer( HDC hdc )
@@ -110,8 +111,8 @@ namespace rtl
                     m_screen_buffer_bitmap_handle = nullptr;
                 }
 
-                m_input.screen.pixels = nullptr;
-                m_input.screen.pitch = 0;
+                m_input.screen.pixels_buffer_pointer = nullptr;
+                m_input.screen.pixels_buffer_pitch = 0;
             }
 
             void window::commit_screen_buffer()
@@ -121,7 +122,7 @@ namespace rtl
             }
         } // namespace win
 
-    } // namespace impl
+    }     // namespace impl
 } // namespace rtl
 
     #endif

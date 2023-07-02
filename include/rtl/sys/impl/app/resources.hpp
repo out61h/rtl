@@ -21,28 +21,28 @@
 
 namespace rtl
 {
-    application::resource::operator bool() const
+    Application::Resource::operator bool() const
     {
         return m_data != nullptr;
     }
 
-    size_t application::resource::size() const
+    size_t Application::Resource::size() const
     {
         return m_size;
     }
 
-    const void* application::resource::data() const
+    const void* Application::Resource::data() const
     {
         return m_data;
     }
 
-    application::resource::resource( void* data, size_t size )
+    Application::Resource::Resource( void* data, size_t size )
         : m_data( data )
         , m_size( size )
     {
     }
 
-    application::resource application::environment::resources::open( int type, int id ) const
+    Application::Resource Application::Environment::Resources::open( int type, int id ) const
     {
         // NOTE: Accordingly to WinAPI docs we don't need to close resource handles explicitly
         HRSRC hrc = ::FindResourceW( nullptr, MAKEINTRESOURCE( id ), MAKEINTRESOURCE( type ) );
@@ -57,7 +57,7 @@ namespace rtl
         LPVOID pointer = ::LockResource( hglobal );
         RTL_WINAPI_CHECK( pointer != 0 );
 
-        return application::resource( pointer, size );
+        return Application::Resource( pointer, size );
     }
 } // namespace rtl
     #endif

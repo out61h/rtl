@@ -61,7 +61,7 @@ namespace rtl
 
     #if RTL_ENABLE_APP_KEYS
                 case WM_ACTIVATE:
-                    rtl::fill_n( that->m_input.keys.state, (size_t)keyboard::keys::count, false );
+                    rtl::fill_n( that->m_input.keys.state, (size_t)keyboard::Keys::count, false );
                     return 0;
 
                 case WM_SYSKEYDOWN:
@@ -164,7 +164,7 @@ namespace rtl
 
                     HDC hdc = ::BeginPaint( hWnd, &ps );
                     RTL_WINAPI_CHECK( hdc != nullptr );
-                    SwapBuffers( hdc );
+                    ::SwapBuffers( hdc );
                     [[maybe_unused]] BOOL result = ::EndPaint( hWnd, &ps );
                     RTL_WINAPI_CHECK( result );
                     break;
@@ -191,7 +191,7 @@ namespace rtl
 
         } // namespace win
 
-    } // namespace impl
+    }     // namespace impl
 } // namespace rtl
 
 #endif

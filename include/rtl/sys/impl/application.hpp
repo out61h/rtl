@@ -14,19 +14,22 @@
     #error "Do not include implementation header directly, use <rtl/sys/impl.hpp>"
 #endif
 
-#include <rtl/algorithm.hpp>
-#include <rtl/chrono.hpp>
-#include <rtl/limits.hpp>
-#include <rtl/memory.hpp>
-#include <rtl/sys/application.hpp>
-#include <rtl/sys/debug.hpp>
-#include <rtl/vector.hpp>
-
-#include "audio.hpp"
-#include "memory.hpp"
-#include "win.hpp"
-
 #if RTL_ENABLE_APP
+    #if !RTL_ENABLE_HEAP
+        #error "RTL_ENABLE_APP=1 needs RTL_ENABLE_HEAP=1"
+    #endif
+
+    #include <rtl/algorithm.hpp>
+    #include <rtl/chrono.hpp>
+    #include <rtl/limits.hpp>
+    #include <rtl/memory.hpp>
+    #include <rtl/sys/application.hpp>
+    #include <rtl/sys/debug.hpp>
+    #include <rtl/vector.hpp>
+
+    #include "audio.hpp"
+    #include "memory.hpp"
+    #include "win.hpp"
 
 namespace rtl
 {
@@ -38,16 +41,16 @@ namespace rtl
             {
             public:
                 [[nodiscard]] bool create( const wchar_t*              app_name,
-                                           application::setup_function on_setup,
-                                           application::init_function* on_init );
+                                           Application::setup_function on_setup,
+                                           Application::init_function* on_init );
 
-                void update( application::setup_function*  on_setup,
-                             application::init_function*   on_resize,
-                             application::update_function* on_update );
+                void update( Application::setup_function*  on_setup,
+                             Application::init_function*   on_resize,
+                             Application::update_function* on_update );
 
-                int  width() const;
-                int  height() const;
-                bool fullscreen() const;
+                [[nodiscard]] int  width() const;
+                [[nodiscard]] int  height() const;
+                [[nodiscard]] bool fullscreen() const;
 
             private:
                 void init_environment();
@@ -111,10 +114,10 @@ namespace rtl
                 bool      m_window_inited{ false };
                 bool      m_window_pad[3]{ false };
 
-                application::input       m_input{ 0 };
-                application::output      m_output{ 0 };
-                application::params      m_params{ 0 };
-                application::environment m_environment{ 0 };
+                Application::Input       m_input{ 0 };
+                Application::Output      m_output{ 0 };
+                Application::Params      m_params{ 0 };
+                Application::Environment m_environment{ 0 };
 
     #if RTL_ENABLE_APP_RESIZE
                 bool            m_resize_sizing{ false };
@@ -137,7 +140,7 @@ namespace rtl
 
         #if RTL_ENABLE_APP_OSD
                 static constexpr auto osd_locations_count
-                    = (size_t)application::output::osd::location::count;
+                    = (size_t)Application::Output::OSD::Location::count;
 
                 RECT  m_osd_rects[osd_locations_count]{ 0 };
                 UINT  m_osd_params[osd_locations_count]{ 0 };
@@ -185,8 +188,8 @@ namespace rtl
             }
 
             bool window::create( const wchar_t*               app_name,
-                                 application::setup_function* on_setup,
-                                 application::init_function*  on_init )
+                                 Application::setup_function* on_setup,
+                                 Application::init_function*  on_init )
             {
                 m_window_class.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
                 m_window_class.lpfnWndProc = wnd_proc;
@@ -333,9 +336,9 @@ namespace rtl
                 // ::UnregisterClassW( m_window_class.lpszClassName, m_window_class.hInstance );
             }
 
-            void window::update( [[maybe_unused]] application::setup_function* on_setup,
-                                 [[maybe_unused]] application::init_function*  on_init,
-                                 application::update_function*                 on_update )
+            void window::update( [[maybe_unused]] Application::setup_function* on_setup,
+                                 [[maybe_unused]] Application::init_function*  on_init,
+                                 Application::update_function*                 on_update )
             {
                 if ( !m_window_inited )
                     return;
@@ -366,25 +369,25 @@ namespace rtl
     #endif
 
                 const auto action
-                    = on_update ? on_update( m_input, m_output ) : application::action::none;
+                    = on_update ? on_update( m_input, m_output ) : Application::Action::wait;
 
     #if RTL_ENABLE_APP_KEYS
-                rtl::fill_n( m_input.keys.pressed, (size_t)keyboard::keys::count, false );
+                rtl::fill_n( m_input.keys.pressed, (size_t)keyboard::Keys::count, false );
     #endif
 
                 switch ( action )
                 {
-                case application::action::close:
+                case Application::Action::close:
                     result = ::DestroyWindow( m_window_handle );
                     break;
 
     #if RTL_ENABLE_APP_RESIZE
-                case application::action::toggle_fullscreen:
+                case Application::Action::toggle_fullscreen:
                     set_fullscreen_mode( !m_resize_fullscreen );
                     break;
     #endif
     #if RTL_ENABLE_APP_RESET
-                case application::action::reset:
+                case Application::Action::reset:
                 {
                     if ( on_setup )
                     {
@@ -420,7 +423,8 @@ namespace rtl
                 }
     #endif
 
-                case application::action::none:
+                case Application::Action::none:
+                case Application::Action::wait:
                 default:
     #if RTL_ENABLE_APP_SCREEN_BUFFER
                     commit_screen_buffer();
@@ -430,6 +434,9 @@ namespace rtl
     #if RTL_ENABLE_APP_AUDIO_OUTPUT
                     commit_audio();
     #endif
+                    if ( action == Application::Action::wait )
+                        ::WaitMessage();
+
                     break;
                 }
             }
@@ -438,9 +445,9 @@ namespace rtl
 
         } // namespace win
 
-    } // namespace impl
+    }     // namespace impl
 
-    void application::run( const wchar_t*      app_name,
+    void Application::run( const wchar_t*      app_name,
                            setup_function*     on_setup,
                            init_function*      on_init,
                            update_function*    on_update,
@@ -499,9 +506,7 @@ namespace rtl
                 ::DispatchMessageW( &msg );
             }
 
-            // TODO: wait for signal to update
             // TODO: run processing in separate thread
-            // TODO: return time for next start or -1 for infinite wait
             impl::win::g_window.update( on_setup, on_init, on_update );
         }
 
@@ -509,9 +514,9 @@ namespace rtl
             on_terminate();
     }
 
-    application& application::instance()
+    Application& Application::instance()
     {
-        static application g_app;
+        static Application g_app;
         return g_app;
     }
 } // namespace rtl
